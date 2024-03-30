@@ -1,4 +1,5 @@
 venv
+fmt-progreso/
 .env
 .vscode
 __pycache__
