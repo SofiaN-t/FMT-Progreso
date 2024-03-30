@@ -1,0 +1,2 @@
+[console_scripts]
+feature_download = tools.cartopy_feature_download.py:__main__

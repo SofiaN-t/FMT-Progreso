@@ -237,3 +237,177 @@ tile_read_success, len(tile_data) if tile_read_success else "No tile data"
 ### Error when running this
 ### The error occurred because the method used to access the TIFF file's internal structure 
 ### wasn't suitable for reading data directly in this manner.
+
+
+### Read the RADD file
+import json
+
+# Load the GeoJSON file as a Python dictionary
+with open("data\download\Deforestation_alerts_(RADD).geojson", 'r') as file:
+    alerts_data = json.load(file)
+
+# Extract basic information about the file
+info_alternative = {
+    "Type": alerts_data.get("type"),
+    "Number of Features": len(alerts_data.get("features", [])),
+    "Example Feature": alerts_data.get("features", [{}])[0] if alerts_data.get("features", []) else "No features found"
+}
+
+info_alternative
+## There doesn't seem to be dates in the available info
+
+## Let's try to extract the properties
+import geopandas as gpd
+
+# Load the GeoJSON file
+alerts_path = 'data\download\Deforestation_alerts_(RADD).geojson'
+alerts_gdf = gpd.read_file(alerts_path)
+
+# Check the properties of the first feature
+first_feature_properties = alerts_gdf.iloc[0].to_dict()
+
+# Print the properties to find out the names
+for property_name, property_value in first_feature_properties.items():
+    print(f"{property_name}: {property_value}")
+
+
+## Let's proceed to extract the coordinates of the areas with the alerts
+# Extracting the coordinates for each alert area
+alert_coordinates = [feature['geometry']['coordinates'] for feature in alerts_data.get('features', [])]
+## This output is a list of lists
+
+# # For demonstration, let's just show the first alert's coordinates to keep the output concise
+# first_alert_coordinates = alert_coordinates[0] if alert_coordinates else []
+
+# first_alert_coordinates
+
+
+# Let's try to plot with geopandas
+from shapely.geometry import Polygon
+import matplotlib.pyplot as plt
+import geopandas as gpd
+
+# Create GeoDataFrame from alert coordinates
+# First, convert each set of coordinates into a Shapely Polygon
+polygons = [Polygon(coords[0]) for coords in alert_coordinates if coords]  # Ensure non-empty
+alerts_geo = gpd.GeoDataFrame(geometry=polygons)
+
+# Plotting the map
+fig, ax = plt.subplots(figsize=(10, 10))
+alerts_geo.boundary.plot(ax=ax)
+plt.title('Map of Alert Areas')
+plt.xlabel('Longitude')
+plt.ylabel('Latitude')
+
+#plt.savefig("data/download/output/radd_map.png")
+plt.show()
+
+
+# Let's try and plot the alert areas on a map of the earth
+# install first
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+
+
+# Create a new figure with a cartographic projection (PlateCarree is commonly used for world maps)
+fig, ax = plt.subplots(figsize=(12, 8), subplot_kw={'projection': ccrs.PlateCarree()})
+
+# Add map features
+ax.add_feature(cfeature.LAND)
+ax.add_feature(cfeature.OCEANS)
+ax.add_feature(cfeature.COASTLINE)
+ax.add_feature(cfeature.BORDERS, linestyle=':')
+
+# Plot each alert polygon onto the map
+for poly in polygons:
+    ax.add_geometries([poly], crs=ccrs.PlateCarree(), edgecolor='red', facecolor='none')
+
+# Set the extent of the map to a global scale
+ax.set_global()
+
+# Add gridlines and labels to the map
+ax.gridlines(draw_labels=True)
+
+plt.title('Deforestation Alert Areas on the World Map')
+plt.savefig("data/download/output/radd_map_earth.png")
+plt.show()
+
+# # Let's do the same with zooming-in
+# Create a new figure with a cartographic projection
+fig, ax = plt.subplots(figsize=(20, 10), subplot_kw={'projection': ccrs.PlateCarree()})
+
+# Add map features for better visualization
+ax.add_feature(cfeature.LAND)
+ax.add_feature(cfeature.OCEANS)
+ax.add_feature(cfeature.COASTLINE)
+ax.add_feature(cfeature.BORDERS, linestyle=':')
+
+# Plot each alert polygon onto the map
+for poly in polygons:
+    ax.add_geometries([poly], crs=ccrs.PlateCarree(), facecolor='red', edgecolor='black', alpha=0.5)
+
+# Set the extent of the map to the bounds of our polygons for a focused view
+# Calculating the min and max for latitude and longitude from all alerts
+all_lons = [lon for polygon in polygons for lon in polygon.exterior.coords.xy[0]]
+all_lats = [lat for polygon in polygons for lat in polygon.exterior.coords.xy[1]]
+min_lon, max_lon, min_lat, max_lat = min(all_lons), max(all_lons), min(all_lats), max(all_lats)
+
+# Add some margin to the extent
+margin = 5
+ax.set_extent([min_lon - margin, max_lon + margin, min_lat - margin, max_lat + margin], crs=ccrs.PlateCarree())
+
+# Add gridlines for reference
+ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False)
+
+plt.title('Deforestation Alert Areas')
+plt.savefig("data/download/output/radd_map_earth_zoom.png")
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#### DEPRECATED
+
+# 1. When there are some incompatibilities between geopandas and plotting library
+# # Let's do the same directly 
+# from matplotlib.patches import Polygon as MplPolygon
+# from matplotlib.collections import PatchCollection
+
+# # Creating the plot
+# fig, ax = plt.subplots(figsize=(10, 10))
+# patches = []
+
+# # Convert alert coordinates to matplotlib Polygons and add them to the plot
+# for alert_coords in alert_coordinates:
+#     for poly_coords in alert_coords:  # Handle potentially multiple polygons per alert
+#         poly = MplPolygon(poly_coords, closed=True, edgecolor='r', facecolor='none')
+#         patches.append(poly)
+
+# # Add patches to the axes
+# p = PatchCollection(patches, match_original=True)
+# ax.add_collection(p)
+
+# # Setting the plot limits to the first alert's bounds as an example
+# # Ideally, you would set this dynamically based on all alerts' extents
+# x_min, y_min, x_max, y_max = patches[0].get_extents().bounds
+# ax.set_xlim(x_min, x_max)
+# ax.set_ylim(y_min, y_max)
+
+# plt.title('Map of Alert Areas')
+# plt.xlabel('Longitude')
+# plt.ylabel('Latitude')
+# plt.show()
+
+
