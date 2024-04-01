@@ -54,11 +54,13 @@ from fiona.crs import from_epsg
 import numpy as np
 
 # Open the raster file
+## The file is not in data folder because of exceeding git limits
+## Can remove from the git exchange
 with rasterio.open("C:\\Users\\user\\Documents\\EAE\\peru_decrease_2004_01_01_to_2023_01_01.asc") as src:
     # Read the raster data
     data = src.read(1) # Assuming it's a single-band raster
 
-    # Get the available metadata -- from chatgpt code below
+    # Get the available metadata
     profile = src.profile
     oviews = src.overviews(1) # here, this is empty, hence the following line throws an error
     # oview=oviews[0]
@@ -71,7 +73,7 @@ with rasterio.open("C:\\Users\\user\\Documents\\EAE\\peru_decrease_2004_01_01_to
     print(width)
     print(height)
 
-    # Get the geographic location of the pixel in row 10, column 15
+    # Get the geographic location of the pixel in row 11, column 16
     row = 10
     col = 15
 
@@ -81,22 +83,76 @@ with rasterio.open("C:\\Users\\user\\Documents\\EAE\\peru_decrease_2004_01_01_to
     # Get the no data value from the metadata
     nodata_value = src.nodatavals[0]  # Assuming we're working with the first band
     
-    # Create a mask for values that are (not) "no data"
+    # Create a mask for values that are not "no data"
     valid_data_mask = data != nodata_value
-    no_data_mask = data == nodata_value
-    
-    # Count (not) "no data" values
-    valid_data_count = np.sum(valid_data_mask)
-    no_data_count = np.sum(no_data_mask)
-    no_data_count
-    
-    print(f'Number of valid data values in the first band: {valid_data_count}')
-    
+    # This returns an array of True/False
+    unique_valid_values = np.unique(data[valid_data_mask])
+    unique_valid_values
+    # The unique values are 0,1,and what seems to be years from 2004 to 2023
+    # consistent with the data description (at least when it comes to the years)
+
+    # Isolate the array with one of the unique values
+    val_2023_mask = data == 2023
+    arr_2023 = data[val_2023_mask]
+    len(arr_2023) # 560
+
+    # Dictionary to hold the indices of each unique valid value
+    indices_of_unique_values = {}
+    # Loop through each unique valid value to find its indices
+    for value in unique_valid_values:
+        # Find the indices where this value occurs
+        indices = np.where(data == value)
+        # Store the indices in the dictionary
+        indices_of_unique_values[value] = indices
+
+    indices_of_unique_values[2004]
+    # How to interpret the output of this:
+    # There are xyz pixels in the raster with the value 2004, located at:
+    # row 4, col 2946
+    # row 46, col 2805
+    # ...    
+
+    # To count the amount of elements within the arrays
+    ind_val_2023 = indices_of_unique_values[2023]
+    num_elements = len(ind_val_2023[0]) # 560 - obviously, the same for the second array
+    # How do these compare against 2004?
+    ind_val_2004 = indices_of_unique_values[2004]
+    num_elements = len(ind_val_2004[0]) # 12157
+
+    # Can we check whether there are combinations of rows and columns that overlap?
+    indices_2022 = indices_of_unique_values[2022]  # This is a tuple of arrays (rows, cols)
+    indices_2023 = ind_val_2023
+
+    # Convert indices to sets of tuples
+    set_of_coordinates_2022 = set(zip(indices_2022[0], indices_2022[1]))
+    set_of_coordinates_2023 = set(zip(indices_2023[0], indices_2023[1]))
+
+    # Find common elements between the two sets
+    overlap = set_of_coordinates_2022.intersection(set_of_coordinates_2023)
+
+    # Check if there is any overlap
+    if overlap:
+        print("There are overlapping row-column combinations.")
+        print("Overlapping coordinates (row, column):", overlap)
+    else:
+        print("There are no overlapping row-column combinations.")
+
     # If you need to perform operations on just the valid data, you can use this mask
     # For example, calculating the mean value of valid data
     valid_data_mean = np.mean(data[valid_data_mask])
-    
     print(f'Mean value of valid data in the first band: {valid_data_mean}')
+
+            # # For the no-data values
+            # no_data_mask = data == nodata_value
+            
+            # # Count (not) "no data" values
+            # valid_data_count = np.sum(valid_data_mask)
+            # no_data_count = np.sum(no_data_mask)
+            # no_data_count
+            
+            # print(f'Number of valid data values in the first band: {valid_data_count}')
+    
+
 
 
     # Generate shapes from the raster data
@@ -120,6 +176,7 @@ with fiona.open('data\download\output\output_peru04_23.shp', 'w', crs=from_epsg(
             'properties': {'id': i+1},  # Assigning an ID to each feature
         })
 ### Takes a long time to run - forced stopping
+
 
 ## Convert a .tif to a geojson file
 import rasterio
@@ -151,6 +208,7 @@ geojson_obj = {"type": "FeatureCollection", "features": features}
 with open("data\download\output\output_30n_120w.geojson", "w") as output_file:
     json.dump(geojson_obj, output_file)
 ## Have not run yet
+
 
 ## Explore a .tif file
 # Open the GeoTIFF file
@@ -239,7 +297,7 @@ tile_read_success, len(tile_data) if tile_read_success else "No tile data"
 ### wasn't suitable for reading data directly in this manner.
 
 
-### Read the RADD file
+## Read the RADD file
 import json
 
 # Load the GeoJSON file as a Python dictionary
@@ -256,7 +314,7 @@ info_alternative = {
 info_alternative
 ## There doesn't seem to be dates in the available info
 
-## Let's try to extract the properties
+## Let's try to extract the properties with an alternative reading
 import geopandas as gpd
 
 # Load the GeoJSON file
@@ -265,10 +323,17 @@ alerts_gdf = gpd.read_file(alerts_path)
 
 # Check the properties of the first feature
 first_feature_properties = alerts_gdf.iloc[0].to_dict()
+second_feature_properties = alerts_gdf.iloc[1].to_dict()
+last_feature_properties = alerts_gdf.iloc[70].to_dict()
+
 
 # Print the properties to find out the names
 for property_name, property_value in first_feature_properties.items():
     print(f"{property_name}: {property_value}")
+
+for property_name in alerts_gdf.columns:
+    sample_value = alerts_gdf[property_name].dropna().iloc[0]  # Get the first non-NA value
+    print(f"{property_name}: {sample_value}")
 
 
 ## Let's proceed to extract the coordinates of the areas with the alerts
@@ -280,6 +345,20 @@ alert_coordinates = [feature['geometry']['coordinates'] for feature in alerts_da
 # first_alert_coordinates = alert_coordinates[0] if alert_coordinates else []
 
 # first_alert_coordinates
+
+## What about trying to extract the values?
+nodata_value = alerts_data.nodatavals[0]
+# This argument does not work with a geopandas file
+
+# Let's try to read in the geojson file using the rasterio libray
+src = rasterio.open("data\download\Deforestation_alerts_(RADD).geojson")
+# Not possible
+# radd_raster = src.read(1)
+
+
+    
+# Create a mask for values that are not "no data"
+# valid_data_mask = data != nodata_value
 
 
 # Let's try to plot with geopandas
