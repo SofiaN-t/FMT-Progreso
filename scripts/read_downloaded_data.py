@@ -69,7 +69,7 @@ with rasterio.open("C:\\Users\\user\\Documents\\EAE\\peru_decrease_2004_01_01_to
     width = src.width
     height = src.height
 
-    print(transform)
+    print(transform) 
     print(width)
     print(height)
 
@@ -91,9 +91,16 @@ with rasterio.open("C:\\Users\\user\\Documents\\EAE\\peru_decrease_2004_01_01_to
     # The unique values are 0,1,and what seems to be years from 2004 to 2023
     # consistent with the data description (at least when it comes to the years)
 
+
+    # specific_value_mask = band1 == specific_value
+    
+    # # Create a masked array where non-matching values are set to NaN
+    # masked_band1 = np.where(specific_value_mask, band1, np.nan)
+
     # Isolate the array with one of the unique values
     val_2023_mask = data == 2023
     arr_2023 = data[val_2023_mask]
+    # This is a 1D array, without the geospatial information encoded in it.
     len(arr_2023) # 560
 
     # Dictionary to hold the indices of each unique valid value
@@ -153,10 +160,9 @@ with rasterio.open("C:\\Users\\user\\Documents\\EAE\\peru_decrease_2004_01_01_to
             # print(f'Number of valid data values in the first band: {valid_data_count}')
     
 
-
-
-    # Generate shapes from the raster data
-    geom = list(shapes(data, transform=transform))
+# Read, transfrom and nest again depedning on the data you are interested on
+# Generate shapes from the raster data
+geom = list(shapes(data, transform=transform))
 
 # Convert the shapes to Shapely geometries
 geometries = [shape(geom) for geom, _ in geom]
@@ -354,11 +360,6 @@ nodata_value = alerts_data.nodatavals[0]
 src = rasterio.open("data\download\Deforestation_alerts_(RADD).geojson")
 # Not possible
 # radd_raster = src.read(1)
-
-
-    
-# Create a mask for values that are not "no data"
-# valid_data_mask = data != nodata_value
 
 
 # Let's try to plot with geopandas
