@@ -27,6 +27,7 @@ col_excel_raw.head()
 
 ## To get the geojson information ##
 # As mentioned, we will focus on one column with the geopspatial info
+geojson_col = 'Coffee plot GeoJson (1)'
 
 # Filter out rows where the GeoJSON data is not present or is not a valid JSON string in the excel file
 valid_geojson_data_ods = col_excel_raw[col_excel_raw['Coffee plot GeoJson (1)'].str.startswith('{', na=False)]['Coffee plot GeoJson (1)']
