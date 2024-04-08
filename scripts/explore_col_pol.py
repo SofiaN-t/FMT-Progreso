@@ -18,6 +18,9 @@ col_excel_raw.head()
 # We see that the file is constructed in a way that is easy to extract the geojson related information
 # via column 'Coffee plot Geojson (1)'
 
+# We also see that there is an individual plot_is column and an element in the geojson column that is called plot_id
+# that do NOT coincide TODO
+
 # Rename columns to eliminate spaces TODO
 
 # Save as csv
