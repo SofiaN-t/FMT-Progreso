@@ -15,3 +15,10 @@ geoplot.polyplot(df, projection=gcrs.AlbersEqualArea(),
                  linewidth=.3, figsize=(12, 8)
                  )
 plt.show()
+
+# Alternatively,
+df.plot()
+plt.show()
+### Observations: ###
+# polyplot as it is here, does not show coordinates on plot but on the hover over
+# Also, longitude is for one positive and for the other negative TODO
