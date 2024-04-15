@@ -32,5 +32,5 @@ Returns True if one geometry completely contains another.
 Returns True if two geometries have at least one point in common, but their interiors do not intersect.
 
 ## Overlaps
-Returns True if the geometries share some but not all points in common and the intersection of their interiors has the same dimension as the geometries themselves.
+Returns True if the geometries share some but not all points in common and the intersection of their interiors has the same dimension as the geometries themselves. This implies that the geometries share some part of their areas.
 
