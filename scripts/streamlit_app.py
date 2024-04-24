@@ -10,21 +10,32 @@ def main():
     st.caption(App_subtitle)
 
     # LOADING DATA
-    Colombia = pd.read_csv(r"C:\Users\lueva\OneDrive\Documentos\EAE\Code\Progreso\Colombian_amazonas.csv")
+    colombia = pd.read_csv(r"C:\Users\lueva\OneDrive\Documentos\EAE\Code\Progreso\colombian_amazonas.csv")
     
-    Status = "Perdida"
-    Colombia = Colombia[Colombia["deforestac"] == Status]
+    status = ''
+    if status:
+        colombia = colombia[colombia["deforestac"] == status]
 
-    st.write(Colombia.shape)
-    st.write(Colombia.head())
-    st.write(Colombia.columns)
+    st.write(colombia.shape)
+    st.write(colombia.head())
+    st.write(colombia.columns)
+    st.write(pd.unique(colombia["deforestac"]))
+    
 
-    # DISPLAY FILTERS AND MAP
+# types = pd.unique(["deforestac"])
 
-    # DISPLAY METRICS
+# for t in types:
+#     mean_area = colombia[colombia["deforestac"] == t]["area_ha"].mean()
+#     print(str(t) + " area size (ha): " + str(mean_area))
+    
+#     number_of_polygons = colombia[colombia["deforestac"] == t]["area_ha"].count()
+#     print(str(t) + " has " + str(number_of_polygons) + " polygons")
 
+# pd.DataFrame([colombia.groupby(["deforestac"])["area_ha"].count(), colombia.groupby(["deforestac"])["area_ha"].mean()]).T
 
+# DISPLAY FILTERS AND MAP
 
+# DISPLAY METRICS
 
 if __name__ == "__main__":
     main()
