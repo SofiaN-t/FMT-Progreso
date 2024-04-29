@@ -3,7 +3,8 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import pandas as pd
 import matplotlib.patches as mpatches
-from shapely.geometry import box
+from rasterio.features import shapes
+from shapely.geometry import shape
 
 
 
@@ -299,96 +300,61 @@ def process_chunk(dataset, window):
 
 
 # Open the GeoTIFF file
-with rasterio.open(file_path) as src:
+#with rasterio.open(file_path) as src:
+src = rasterio.open(file_path)
     # Calculate the size of each chunk
-    width, height = src.width, src.height
+width, height = src.width, src.height
     
-    all_geometries = []
+all_geometries = []
     
     # Iterate over each chunk
-    for i in range(0, height, chunk_size):
-        for j in range(0, width, chunk_size):
-            # Define the window for the current chunk
-            window = Window(j, i, chunk_size, chunk_size)
-            # Process the current chunk
-            chunk_geometries = process_chunk(src, window)
-            # Append the results
-            all_geometries.extend(chunk_geometries)
+for i in range(0, height, chunk_size):
+    for j in range(0, width, chunk_size):
+        # Define the window for the current chunk
+        window = Window(j, i, chunk_size, chunk_size)
+        # Read current chunk
+        image = src.read(1, window=window)
+        # Check if the image slice is empty or all zeros
+        if np.all(image == 0):
+            print(f"Chunk at ({i},{j}) is all zeros or empty.")
+            continue
+        ## Process the current chunk
+        # Create a mask with non-zero values
+        mask = image != 0
+        # Extract shapes from the mask
+        transform = rasterio.windows.transform(window, src.transform)
+        results = shapes(image, mask=mask, transform=transform)
+        # Check the output from generator
+        results_list = list(results)
+        if not results_list:
+            print(f"No valid shapes in chunk at ({i},{j}).")
+            continue
+            
+        # Create polygons from the shapes
+        chunk_geometries = [shape(geom) for geom, value in results_list if value > 0]
+        # chunk_geometries = process_chunk(src, window)
+        # Append the results
+        all_geometries.extend(chunk_geometries)
 
 # Create a GeoDataFrame
-gdf = gpd.GeoDataFrame({'geometry': all_geometries}, crs=src.crs)
+if all_geometries:
+    gdf = gpd.GeoDataFrame({'geometry': all_geometries}, crs=src.crs)
+else:
+    print("No geometries were created from the raster data.")
 
 # Save the GeoDataFrame to a file (e.g., Shapefile)
 # output_path = '.shp'
 # gdf.to_file(output_path)
 
 
-image = src.read(1, window)
-
-
-# Reopen the file and process it in larger chunks
-with rasterio.open(file_path) as src:
-    width, height = src.width, src.height
-    transform = src.transform
-    crs = src.crs
-    
-    # Prepare to collect data
-    points_list = []
-    values_list = []
-    
-    for i in range(0, height, chunk_size):
-        for j in range(0, width, chunk_size):
-            # Define window
-            window = Window(j, i, chunk_size, chunk_size)
-            window_transform = src.window_transform(window)
-            data_chunk = src.read(1, window=window)
-            
-            mask = data_chunk != 0
-            # # Find nonzero values in the chunk
-            # nonzero_y, nonzero_x = np.nonzero(data_chunk)
-            # nonzero_values = data_chunk[nonzero_y, nonzero_x]
-            # coordinates = [window_transform * (x, y) for x, y in zip(nonzero_x, nonzero_y)]
-            
-            # # Append points and values
-            # for x, y in coordinates:
-            #     points_list.append(Point(x, y))
-            #     values_list.append(data_chunk[y - i, x - j])  # Adjust indices for local window
-
-# Create a GeoDataFrame with the accumulated data
-gdf_optimized = gpd.GeoDataFrame({'Value': values_list, 'geometry': points_list}, crs=crs)
-gdf_optimized.head()  # Display the first few rows to verify the process
+## Check overlap ##
+check_overlap = gpd.sjoin(farms_gdf, gdf, how="inner", op='intersects')
 
 
 
-import rasterio
-from rasterio.features import shapes
-import geopandas as gpd
-from shapely.geometry import shape
-import numpy as np
 
-# Path to your GeoTIFF file
-geotiff_path = 'path_to_your_geotiff_file.tif'
 
-# Open the GeoTIFF file
-with rasterio.open(geotiff_path) as src:
-    # Read the raster data
-    image = src.read(1)  # Read the first band
-    
-    # Create a mask with non-zero values
-    mask = image != 0
-    
-    # Extract shapes from the mask
-    results = shapes(image, mask=mask, transform=src.transform)
-    
-    # Create polygons from the shapes
-    geometries = [shape(geom) for geom, value in results if value == 1]
 
-# Create a GeoDataFrame
-gdf = gpd.GeoDataFrame({'geometry': geometries}, crs=src.crs)
-
-# Save the GeoDataFrame to a file (e.g., Shapefile)
-output_path = 'path_to_save_shapes.shp'
-gdf.to_file(output_path)
 
 
 
