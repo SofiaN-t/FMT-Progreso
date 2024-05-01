@@ -3,8 +3,11 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import pandas as pd
 import matplotlib.patches as mpatches
+import rasterio
 from rasterio.features import shapes
 from shapely.geometry import shape
+import numpy as np
+import os
 
 
 
@@ -40,17 +43,19 @@ radd_gdf.values
 # first_feature_properties = radd_gdf.iloc[0].to_dict()
 # first_feature_properties
 
-# import geodatasets
+## Intermezzo ##
+# To check explore
+                    # import geodatasets
 
-# df = gpd.read_file(geodatasets.get_path("geoda.chicago_health"))
-# df.head()
-# df.columns
-# explore_df=df.explore("community", cmap="Blues")
-# output_file = "example_community.html"
-# explore_df.save(output_file)
+                    # df = gpd.read_file(geodatasets.get_path("geoda.chicago_health"))
+                    # df.head()
+                    # df.columns
+                    # explore_df=df.explore("community", cmap="Blues")
+                    # output_file = "example_community.html"
+                    # explore_df.save(output_file)
 
-# import webbrowser
-# webbrowser.open(output_file, new=2) 
+                    # import webbrowser
+                    # webbrowser.open(output_file, new=2) 
 
 
 # Filter for South America only
@@ -192,7 +197,7 @@ from rasterio.windows import Window
 
 
 # Path to your GeoTIFF file
-file_path = 'data\\download\\00N_070W.tif'
+file_path = 'data\\download\\00N_080W.tif'
 
 # Open the raster file
 with rasterio.open(file_path) as src:
@@ -278,7 +283,7 @@ from shapely.geometry import Point
 
 
 # Simplify the processing loop and increase chunk size for efficiency
-chunk_size = 4000  # Larger chunk size to reduce number of iterations
+chunk_size = 10000  # Larger chunk size to reduce number of iterations
 
 from rasterio.features import shapes
 
@@ -342,9 +347,108 @@ if all_geometries:
 else:
     print("No geometries were created from the raster data.")
 
+gdf.plot()
+plt.show()
+
 # Save the GeoDataFrame to a file (e.g., Shapefile)
-# output_path = '.shp'
+output_path = 'data/download/output/00N_080W.shp'
 # gdf.to_file(output_path)
+# with open(output_path, 'w') as f:
+#     f.write(gdf.to_json())
+# Chunked writing
+# Define the output file path
+output_file = 'data/download/output/00N_080W.gpkg'
+
+# Save the GeoDataFrame to Geopackage with chunking
+# chunk_size = 10000 
+# with gpd.GeoDataFrame() as chunked_gdf:
+#     for i in range(0, len(gdf), chunk_size):
+#         chunk = gdf.iloc[i:i+chunk_size]
+#         chunk.to_file(output_file, driver='GPKG', append=i!=0)
+
+
+import geopandas as gpd
+import os
+
+# Load your GeoDataFrame
+# geo_df = ...
+
+# Define the output directory and base file name
+output_dir = 'data/download/output/00N_080W_output_chunks'
+base_filename = 'output_chunk_'
+
+# Create the output directory if it doesn't exist
+os.makedirs(output_dir, exist_ok=True)
+
+# Define the chunk size
+# chunk_size = 10000  # Adjust as needed
+
+# Save the GeoDataFrame to Geopackage in chunks
+for i, chunk_start in enumerate(range(0, len(gdf), chunk_size)):
+    chunk_end = min(chunk_start + chunk_size, len(gdf))
+    chunk = gdf.iloc[chunk_start:chunk_end]
+    output_file = os.path.join(output_dir, f"{base_filename}{i}.gpkg")
+    chunk.to_file(output_file, driver='GPKG')
+
+input_file = 'data/download/output/00N_080W_output_chunks/output_chunk_3.gpkg'
+with fiona.open(input_file, 'r', driver='GPKG') as src:
+    # Get the schema of the input file
+    schema = src.schema
+    schema
+
+# Merge the chunked Geopackage files into a single file
+# os.system(f"ogrmerge.py -o {output_file} {output_dir}/*.gpkg")
+
+
+import subprocess
+
+# Merge the chunked Geopackage files into a single file using subprocess
+output_file = 'data/download/output/00N_080W_merged_output.gpkg'
+# subprocess.run(['ogrmerge.py', '-o', output_file, 'output_chunks/*.gpkg'], shell=True)
+
+import fiona
+
+# List of paths to individual Geopackage files
+input_files = ['data/download/output/00N_080W_output_chunks/output_chunk_0.gpkg', 'data/download/output/00N_080W_output_chunks/output_chunk_1.gpkg', 'data/download/output/00N_080W_output_chunks/output_chunk_3.gpkg', 'data/download/output/00N_080W_output_chunks/output_chunk_4.gpkg']
+
+# Output file path for the merged Geopackage file
+# output_file = 'merged_output.gpkg'
+
+# Define schema for the output file
+schema = {'geometry': 'Polygon', 'properties': {}}
+
+# Open the output Geopackage file for writing
+with fiona.open(output_file, 'w', driver='GPKG', schema = schema) as output:
+    # Iterate over each input Geopackage file
+    for input_file in input_files:
+        if os.path.exists(input_file) and os.path.getsize(input_file) > 0:
+
+        # Open the input Geopackage file for reading
+            with fiona.open(input_file, 'r', driver='GPKG') as src:
+                schema = src.schema
+                #print(schema)
+            # Iterate over each feature in the input file and write it to the output file
+                for feature in src:
+                    output.write(feature)
+        else:
+            print(f"Skipping empty or non-existent file: {input_file}")
+
+# print("Merging complete.")
+
+merged_output = gpd.read_file(output_file)
+merged_output.head()
+merged_output.plot()
+plt.show()
+
+# # Remove the intermediate chunk files
+for filename in os.listdir(output_dir):
+    os.remove(os.path.join(output_dir, filename))
+
+
+# Remove the empty output directory
+# os.rmdir(output_dir)
+
+
 
 
 ## Check overlap ##
