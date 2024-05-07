@@ -10,6 +10,8 @@ import numpy as np
 import fiona
 import glob
 
+import time
+
 
 ## Files ##
 # Progreso
@@ -96,7 +98,7 @@ check_overlap
 # selecting appr an area close to the colombian farms polygons
 
 # Path to the GeoTIFF file
-file_path = 'data\\download\\00N_080W.tif'
+file_path = 'data\\download\\10N_080W.tif'
 
 # Open the raster file
 with rasterio.open(file_path) as src:
@@ -139,12 +141,13 @@ print("Total number of tiles:", total_tiles)
 chunk_size = 10000
 
 # To time the reading of the file
-import time
 start_time = time.time()
 
 # Open the GeoTIFF file
 src = rasterio.open(file_path)
-# Calculate the size of each chunk
+# Check the bounds
+src.bounds
+# Calculate the size of file
 width, height = src.width, src.height
     
 all_geometries = []
@@ -189,15 +192,15 @@ else:
 print("Turning the tiff file to a geodataframe --- %s seconds ---" % (time.time() - start_time))
 
 gdf.info()
-gdf.head()[0]
+gdf.head(1)
 
-gdf.plot()
-plt.show()
+# gdf.plot()
+# plt.show()
 ### Observations: ###
 # Reading the file in chunks took ~20mins
 # When turning it into a geodataframe, info shows that we have ~20M rows
 # So, it is next to impossible to plot it (at least as such)
-# Also, we expect that the writing will take an awful lot of time so, will write in in chunks
+# Also, we expect that the writing will take an awful lot of time so, will write it in chunks
 
 ## Save the geodataframe to a file 
 # First, write to individual files
@@ -224,20 +227,17 @@ print("Writing the chunks to individual files took --- %s seconds ---" % (time.t
 # Producing these outputs took >1h, 190 files produced
 
 # Now, merge the files
-# Define schema for the output file
-input_file = 'data/download/output/00N_080W_output_chunks/output_chunk_3.gpkg'
-with fiona.open(input_file, 'r', driver='GPKG') as src:
-    # Get the schema of the input file
-    schema = src.schema
-    schema
-# schema = {'geometry': 'Polygon', 'properties': {}}
-
-
 start_time = time.time()
 # List of produced files
 input_files = glob.glob(os.path.join(output_dir, '*.gpkg'))
 # File to merge all the produced files
-output_file = 'data/download/output/00N_080W_merged_output.gpkg'
+output_file = 'data/download/output/00N_080W_merged_output_second_attempt.gpkg'
+# Decide schema
+input_file = 'data/download/output/00N_080W_output_chunks/output_chunk_3.gpkg'
+with fiona.open(input_file, 'r', driver='GPKG') as src:
+    # Get the schema of the input file
+    schema = src.schema
+# schema
 
 # Open the output Geopackage file for writing
 with fiona.open(output_file, 'w', driver='GPKG', schema = schema) as output:
@@ -254,6 +254,8 @@ with fiona.open(output_file, 'w', driver='GPKG', schema = schema) as output:
         else:
             print(f"Skipping empty or non-existent file: {input_file}")
 print("Writing the produced individual files to one geopackage file took --- %s seconds ---" % (time.time() - start_time))
+### Observations ###
+# Merging the files into one was partially fulifilled, was forced to stop after > 2h
 
 
 # Read the output
@@ -261,9 +263,37 @@ start_time = time.time()
 merged_output = gpd.read_file(output_file)
 print("Reading the partial merged geopackage file took --- %s seconds ---" % (time.time() - start_time))
 
+# merged_output.head()
+# merged_output.plot()
+# plt.show()
+### Observations: ###
+# The produced output cannot be read without using some window function, let alone plotted
+
+
+# Zoom in for reading only specific part
+# Define a bounding box
+min_x = -79.5 
+min_y = -8.5
+max_x = -79.0
+max_y = -8.0
+bbox = (min_x, min_y, max_x, max_y)
+
+# Load data within the bounding box
+merged_output = gpd.read_file(output_file, bbox=bbox)
 merged_output.head()
-merged_output.plot()
-plt.show()
+### Observations: ###
+# With the bounds of interest, we get an empty dataframe as a result
+# The merged parts likely do not fall into that
+# Choosing coordinates very close to the edges also didnt help
+# Choosing limits based on bounds found below also didn't help
+
+# Let's find out the bounding box first
+# Open the file using Fiona to read only the metadata
+with fiona.open(output_file) as src:
+    # Print the bounding box
+    print("Bounding Box:", src.bounds)
+
+
 
 # # Remove the intermediate chunk files
 for filename in os.listdir(output_dir):
@@ -271,14 +301,22 @@ for filename in os.listdir(output_dir):
 
 
 # Remove the empty output directory
-# os.rmdir(output_dir)
-
-
+os.rmdir(output_dir)
 
 
 ## Check overlap ##
-check_overlap = gpd.sjoin(farms_gdf, gdf, how="inner", op='intersects')
+check_overlap = gpd.sjoin(farms_gdf, merged_output, how="inner", op='intersects')
+### Observations: ###
+# The merged geodataframe doesn't have a clear CRS
+# Let's make sure of that
 
+# Get the crs from the original raster file
+# And, force it one the merged df
+# And then, run the above lines again (as long as there is a non-empty merged_output)
+with rasterio.open(file_path) as src:
+    crs = src.crs
+
+merged_output.crs = crs
 
 
 
