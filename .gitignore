@@ -1,5 +1,7 @@
 venv
 .fmt-progreso/
+data/
+*.html
 .env
 .vscode
 __pycache__
