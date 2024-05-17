@@ -6,7 +6,8 @@ from rasterio.plot import show
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 
-# To read a specific window of the RADD data
+
+# Function to plot all areas
 def display_areas(radd_path, plots_path, amaz_path, lat_range, lon_range, only_alerts):
     with rasterio.open(radd_path) as src:
         # Transform geographic coordinates into raster coordinates
