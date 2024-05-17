@@ -58,8 +58,11 @@ def plot_vector(gdf, title):
     center = gdf.geometry.centroid.unary_union.centroid.coords[0][::-1]
     m = folium.Map(location=center, zoom_start=12)
 
+    # Define tooltips
+    tooltip = folium.GeoJsonTooltip(fields=list(gdf.columns[:-1]), aliases=[f"{col}:" for col in gdf.columns[:-1]])
+
     # Add the GeoDataFrame to the Folium map
-    folium.GeoJson(gdf).add_to(m)
+    folium.GeoJson(gdf, tooltip=tooltip).add_to(m)
 
     # # Display the map in Streamlit
     # folium_static(m)
