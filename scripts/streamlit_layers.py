@@ -81,7 +81,7 @@ def plot_vector(plots_gdf, vector_ext_gdf, title):
     # Reproject for centroid calculation
     plots_gdf_reproj = reproject(plots_gdf)
     # Create a Folium map centered around the mean coordinates of the geometries
-    center = plots_gdf_reproj.geometry.centroid.unary_union.centroid.coords[0][::-1]
+    center = plots_gdf.geometry.centroid.unary_union.centroid.coords[0][::-1] # Because the geometries are small, the geographic CRS is still ok
     m = folium.Map(location=center, zoom_start=12)
 
     # Define tooltip for coffee plots
@@ -89,12 +89,14 @@ def plot_vector(plots_gdf, vector_ext_gdf, title):
 
     # Define style for coffee plots
     style_plots = {
-        'fillColor': '#blue',
-        'color': '#blue',
+        'fillColor': '#0000ff', #blue
+        'color': '#0000ff',
     }
 
     # Add the coffee plots to the Folium map
     folium.GeoJson(plots_gdf, tooltip=tooltip_plots, style_function=lambda x:style_plots, name='Coffee plots').add_to(m)
+    #folium.GeoJson(plots_gdf, tooltip=tooltip_plots, name='Coffee plots').add_to(m)
+
 
     # Define tooltip for available external vector data
     if vector_ext_gdf is not None:
@@ -102,12 +104,13 @@ def plot_vector(plots_gdf, vector_ext_gdf, title):
         
         # Define style for external vector layer
         style_vector_ext_gdf = {
-            'fillColor': '#white',
-            'color': '#black',
+            'fillColor': '#000000', #black
+            'color': '#000000',
         }
         # Add the external vector layer to the Folium map
         folium.GeoJson(vector_ext_gdf, tooltip=tooltip_vector_ext_gdf, style_function=lambda x:style_vector_ext_gdf, name='Amazonian Colombia').add_to(m)
-    
+        #folium.GeoJson(vector_ext_gdf, tooltip=tooltip_vector_ext_gdf, name='Amazonian Colombia').add_to(m)
+
     
     # # Display the map in Streamlit
     # folium_static(m)
@@ -131,6 +134,21 @@ def plot_vector(plots_gdf, vector_ext_gdf, title):
 
     # Add layer control to toggle layers
     folium.LayerControl().add_to(m)
+
+    # Create custom legend
+    legend_html = '''
+    <div style="
+        position: fixed; 
+        bottom: 50px; left: 50px; width: 150px; height: 90px; 
+        background-color: white; z-index: 9999; font-size: 14px;
+        border:2px solid grey; padding: 10px;">
+        <b>Legend</b><br>
+        <i style="background: #0000ff; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>Coffee Farms<br>
+        <i style="background: #000000; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>Amazonian Colombia
+    </div>
+    '''
+    legend_element = folium.Element(legend_html)
+    m.get_root().html.add_child(legend_element)
 
     # Render Folium map as HTML
     map_html = m._repr_html_()
