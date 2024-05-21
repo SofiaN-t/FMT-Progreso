@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from matplotlib.cm import ScalarMappable
 from folium.raster_layers import ImageOverlay
+from matplotlib import cm
 from streamlit.components.v1 import html
 
 
@@ -37,7 +38,7 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-
+# Doesn't seem to be working #TODO
 
 # To load vector data
 @st.cache_data 
@@ -68,10 +69,10 @@ def read_radd_window(file_path, bounds, only_alerts):
         return data, transform 
 
 # To convert raster data to an image format suitable for folium
-# def array_to_image(data):
-#     data_normalized = (data - np.min(data)) / (np.max(data) - np.min(data))
-#     return np.uint8(data_normalized * 255)
-# This ends up plotting a black rectangular
+def array_to_image(data):
+    data_normalized = (data - np.min(data)) / (np.max(data) - np.min(data))
+    return np.uint8(data_normalized * 255)
+# This ends up plotting a black rectangular - ??
 
 # To convert raster data to an RGBA image with a colormap
 def apply_colormap(data):
@@ -114,8 +115,8 @@ image_bounds = (-76.5, 1.8, -75.5, 2)
 only_alerts = False
 radd_data, radd_transform = read_radd_window(file_path=radd_path, bounds=image_bounds, only_alerts=only_alerts)
 # Convert raster data to a suitable format
-radd_data = apply_colormap(data=radd_data)
-
+# radd_data = apply_colormap(data=radd_data)
+radd_data = array_to_image(data=radd_data)
 
 
 
@@ -132,7 +133,7 @@ st.dataframe(plots_gdf.drop(columns='geometry'))
 # st.write("Check the amazonian colombia dataset:")
 # st.dataframe(amaz_gdf.drop(columns='geometry'))
 
-# Plot GeoJSON data on a map
+# Plot all data on a map
 def plot_vector_and_raster(plots_gdf, vector_ext_gdf, raster_ext, title):
     # Reproject for centroid calculation
     plots_gdf_reproj = reproject(plots_gdf)
@@ -172,7 +173,7 @@ def plot_vector_and_raster(plots_gdf, vector_ext_gdf, raster_ext, title):
         folium_bounds = [[image_bounds[1], image_bounds[0]], [image_bounds[3], image_bounds[2]]]
 
         # Add external raster layer as an overlay
-        ImageOverlay(image=raster_ext, bounds=folium_bounds, name='RADD data', opacity=0.05).add_to(m)
+        ImageOverlay(image=raster_ext, bounds=folium_bounds, name='RADD data', colormap=cm.get_cmap('Oranges', 10)).add_to(m)
     
     
     # # Display the map in Streamlit

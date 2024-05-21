@@ -51,38 +51,6 @@ def reproject(gdf):
 # from https://gis.stackexchange.com/questions/372564/userwarning-when-trying-to-get-centroid-from-a-polygon-geopandas
 # TODO investigate other options
 
-# To load raster data (based on window)
-def read_radd_window(file_path, bounds, only_alerts):
-    with rasterio.open(file_path) as src:
-        # Convert geographic to pixel coordinates
-        window = from_bounds(*bounds, src.transform)
-        # Read the window
-        data = src.read(1, window=window)
-        if only_alerts == True:
-            # Keep only alerts (non-negative values)
-            data = np.where(data > 0, data, np.nan)
-        else:
-            data = data
-        # Get the transform of window to be able to map pixel to geographic
-        transform = src.window_transform(window)
-        return data, transform 
-
-# To convert raster data to an image format suitable for folium
-# def array_to_image(data):
-#     data_normalized = (data - np.min(data)) / (np.max(data) - np.min(data))
-#     return np.uint8(data_normalized * 255)
-# This ends up plotting a black rectangular
-
-# To convert raster data to an RGBA image with a colormap
-def apply_colormap(data):
-    norm = Normalize(vmin=np.min(data), vmax=np.max(data))
-    cmap = plt.get_cmap('viridis')  # Choose a colormap
-    mappable = ScalarMappable(norm=norm, cmap=cmap)
-    rgba_image = mappable.to_rgba(data, bytes=True)
-    return rgba_image
-
-
-
 
 
 #### Load data ####
@@ -105,19 +73,9 @@ amaz_gdf = amaz_gdf.loc[amaz_gdf['deforestac'] == 'Perdida']
 # Transform the crs based on farms' crs
 amaz_gdf = amaz_gdf.to_crs(plots_gdf.crs.to_epsg())
 
-## Read in the radd data (raster)
-# Path for raster
-radd_path = os.path.abspath('data/input/raw/10N_080W.tif')
-# Define bounds for reading window: expected format (min_lon, min_lat, max_lon, max_lat)
-image_bounds = (-76.5, 1.8, -75.5, 2) 
-# Define whether you want to show only the alerts
-only_alerts = False
-radd_data, radd_transform = read_radd_window(file_path=radd_path, bounds=image_bounds, only_alerts=only_alerts)
-# Convert raster data to a suitable format
-radd_data = apply_colormap(data=radd_data)
-
-
-
+# Read in the raster to gdf radd datapoints
+radd_path = os.path.abspath("data\\input\\processed\\radd_gdf.geojson")
+radd_gdf = load_vector(radd_path)
 
 
 
@@ -132,8 +90,8 @@ st.dataframe(plots_gdf.drop(columns='geometry'))
 # st.write("Check the amazonian colombia dataset:")
 # st.dataframe(amaz_gdf.drop(columns='geometry'))
 
-# Plot GeoJSON data on a map
-def plot_vector_and_raster(plots_gdf, vector_ext_gdf, raster_ext, title):
+# Plot vector data on a map
+def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
     # Reproject for centroid calculation
     plots_gdf_reproj = reproject(plots_gdf)
     # Create a Folium map centered around the mean coordinates of the geometries
@@ -153,26 +111,34 @@ def plot_vector_and_raster(plots_gdf, vector_ext_gdf, raster_ext, title):
     folium.GeoJson(plots_gdf, tooltip=tooltip_plots, style_function=lambda x:style_plots, name='Coffee plots').add_to(m)
     #folium.GeoJson(plots_gdf, tooltip=tooltip_plots, name='Coffee plots').add_to(m)
 
-
+    # For the second layer
     # Define tooltip for available external vector data
-    if vector_ext_gdf is not None:
-        tooltip_vector_ext_gdf = folium.GeoJsonTooltip(fields=list(vector_ext_gdf.columns[:-1]), aliases=[f"{col}:" for col in vector_ext_gdf.columns[:-1]])
+    if vector1_ext_gdf is not None:
+        tooltip_vector1_ext_gdf = folium.GeoJsonTooltip(fields=list(vector1_ext_gdf.columns[:-1]), aliases=[f"{col}:" for col in vector1_ext_gdf.columns[:-1]])
         
         # Define style for external vector layer
-        style_vector_ext_gdf = {
+        style_vector1_ext_gdf = {
             'fillColor': '#000000', #black
             'color': '#000000',
         }
         # Add the external vector layer to the Folium map
-        folium.GeoJson(vector_ext_gdf, tooltip=tooltip_vector_ext_gdf, style_function=lambda x:style_vector_ext_gdf, name='Amazonian Colombia').add_to(m)
+        folium.GeoJson(vector1_ext_gdf, tooltip=tooltip_vector1_ext_gdf, style_function=lambda x:style_vector1_ext_gdf, name='Amazonian').add_to(m)
         #folium.GeoJson(vector_ext_gdf, tooltip=tooltip_vector_ext_gdf, name='Amazonian Colombia').add_to(m)
 
-        # Raster data
-        # Reformulate the bounds to match ImageOverlay: expected [[min_lat, min_lon], [max_lat, max_lon]]
-        folium_bounds = [[image_bounds[1], image_bounds[0]], [image_bounds[3], image_bounds[2]]]
+    # For the third layer
+    # Define tooltip for available external vector data
+    if vector2_ext_gdf is not None:
+        print('radd_alerts')
+        tooltip_vector2_ext_gdf = folium.GeoJsonTooltip(fields=list(vector2_ext_gdf.columns[:-1]), aliases=[f"{col}:" for col in vector2_ext_gdf.columns[:-1]])
+        
+        # Define style for external vector layer
+        style_vector2_ext_gdf = {
+            'fillColor': '#FF0000', #red
+            'color': '#FF0000',
+        }
+        # Add the external vector layer to the Folium map
+        folium.GeoJson(vector2_ext_gdf, tooltip=tooltip_vector2_ext_gdf, style_function=lambda x:style_vector2_ext_gdf, name='Radd areas').add_to(m)
 
-        # Add external raster layer as an overlay
-        ImageOverlay(image=raster_ext, bounds=folium_bounds, name='RADD data', opacity=0.05).add_to(m)
     
     
     # # Display the map in Streamlit
@@ -207,7 +173,8 @@ def plot_vector_and_raster(plots_gdf, vector_ext_gdf, raster_ext, title):
         border:2px solid grey; padding: 10px;">
         <b>Legend</b><br>
         <i style="background: #0000ff; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>Coffee Farms<br>
-        <i style="background: #000000; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>Amazonian Colombia
+        <i style="background: #000000; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>Amazonian<br>
+        <i style="background: #FF0000; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>RADD<br>
     </div>
     '''
     legend_element = folium.Element(legend_html)
@@ -217,7 +184,7 @@ def plot_vector_and_raster(plots_gdf, vector_ext_gdf, raster_ext, title):
     map_html = m._repr_html_()
     html(map_html, width=1000, height=700)
 
-plot_vector_and_raster(plots_gdf=plots_gdf, vector_ext_gdf=amaz_gdf, raster_ext=radd_data, title='Coffe farms & amazonian Colombia alerts')
+plot_all_vectors(plots_gdf=plots_gdf, vector1_ext_gdf=amaz_gdf, vector2_ext_gdf=radd_gdf, title='Coffe farms & amazonian Colombia & RADD alerts')
 
 
 # def main():
