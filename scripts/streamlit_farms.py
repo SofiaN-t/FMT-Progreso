@@ -44,6 +44,9 @@ os.chdir(default_path)
 plots_path = os.path.abspath("data\\input\\processed\\plots_colombia.geojson")
 plots_gdf = load_vector(plots_path)
 
+radd_path = os.path.abspath("data\\input\\processed\\radd_gdf.geojson")
+radd_gdf = load_vector(radd_path)
+
 # # Display the plots dataset in an expandable table
 # with st.expander("Check the complete dataset:"):
 #     st.dataframe(plots_gdf)
@@ -52,7 +55,7 @@ st.write("Check the coffee farms:")
 st.dataframe(plots_gdf.drop(columns='geometry'))
 # st.dataframe cannot recognise and show the polygons
 
-# Plot GeoJSON data on a map
+# Plot coffee plots data on a map
 def plot_vector(gdf, title):
     # Create a Folium map centered around the mean coordinates of the geometries
     center = gdf.geometry.centroid.unary_union.centroid.coords[0][::-1]
@@ -87,9 +90,9 @@ def plot_vector(gdf, title):
     map_html = m._repr_html_()
     html(map_html, width=1000, height=700)
 
-plot_vector(plots_gdf, "Coffee farms")
+plot_vector(radd_gdf, "Coffee farms")
 
-
+radd_gdf.crs
 # def main():
 #     st.title("GeoJSON Plotter")
 
