@@ -5,28 +5,14 @@ import folium
 # from streamlit_folium import folium_static
 from streamlit.components.v1 import html
 
+from streamlit_data_load import load_vector
 
-# ----- Page configs -----
-st.set_page_config(
-    page_title="Coffee farms - Colombia",
-)
-
-# ----- Left menu -----
-# with st.sidebar:
-#     st.image("eae_img.png", width=200)
-#     st.header("Introduction to Programming Languages for Data")
-#     st.write("###")
-#     st.write("***Final Project - Dec 2023***")
-#     st.write(f"**Author:** {name}")
-#     st.write("**Instructor:** [Enric Domingo](https://github.com/enricd)")
-
-
-
-
-# To load vector data
-@st.cache_data 
-def load_vector(file_path):
-    return gpd.read_file(file_path)
+# To load all data
+def load_all_vectors(plots_path, amaz_path, radd_path):
+    plots_gdf = load_vector(plots_path)
+    amaz_gdf = load_vector(amaz_path)
+    radd_gdf = load_vector(radd_path)
+    return plots_gdf, amaz_gdf, radd_gdf
 
 # To reproject to a projected geometry
 def reproject(gdf):
@@ -34,43 +20,6 @@ def reproject(gdf):
 # meridonal distances at the poles are amplified -- new standard epsg:4087
 # from https://gis.stackexchange.com/questions/372564/userwarning-when-trying-to-get-centroid-from-a-polygon-geopandas
 # TODO investigate other options
-
-# Make sure the working directory is the root folder
-default_path = "C:\\Users\\user\\Documents\\EAE\\FMT-Progreso"
-os.chdir(default_path)
-# Read in the plots
-#plots_path = "data\\input\\processed\\plots_colombia.geojson"
-plots_path = os.path.abspath("data\\input\\processed\\plots_colombia.geojson")
-plots_gdf = load_vector(plots_path)
-
-# Read in the amazonian colombia datapoints
-amaz_path = os.path.abspath("data\\input\\raw\\perdida_de_bosque\\TMAPB_Region_100K_2020_2022.shp")
-amaz_gdf = load_vector(amaz_path)
-# Transform as required
-amaz_gdf = amaz_gdf.explode(index_parts=True)
-# Filtering for only deforestation areas
-amaz_gdf = amaz_gdf.loc[amaz_gdf['deforestac'] == 'Perdida']
-# Transform the crs based on farms' crs
-amaz_gdf = amaz_gdf.to_crs(plots_gdf.crs.to_epsg())
-
-# Read in radd when in gdf
-radd_path = os.path.abspath("data\\input\\processed\\radd_gdf.geojson")
-radd_gdf = load_vector(radd_path)
-
-
-
-
-# # Display the plots dataset in an expandable table
-# with st.expander("Check the complete dataset:"):
-#     st.dataframe(plots_gdf)
-
-# st.write("Check the coffee farms:")
-# st.dataframe(plots_gdf.drop(columns='geometry'))
-# st.dataframe cannot recognise and show the polygons
-
-# st.write("Check the amazonian colombia dataset:")
-# st.dataframe(amaz_gdf.drop(columns='geometry'))
-
 
 
 # Plot vector data on a map
@@ -171,6 +120,15 @@ def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
     map_html = m._repr_html_()
     html(map_html, width=1000, height=700)
 
+
+# Load the data
+plots_path = os.path.abspath("data\\input\\processed\\plots_colombia.geojson")
+amaz_path = os.path.abspath("data\\input\\raw\\perdida_de_bosque\\TMAPB_Region_100K_2020_2022.shp")
+radd_path = os.path.abspath("data\\input\\processed\\radd_gdf.geojson")
+
+plots_gdf, amaz_gdf, radd_gdf = load_all_vectors(plots_path, amaz_path, radd_path)
+
+# Plot the map
 plot_all_vectors(plots_gdf=plots_gdf, vector1_ext_gdf=amaz_gdf, vector2_ext_gdf=radd_gdf, title='Coffe farms & amazonian Colombia & RADD alerts')
 
 
