@@ -4,12 +4,9 @@ from pages import streamlit_intersection_table
 
 
 # ----- Page configs -----
-st.set_page_config(
-    page_title="Coffee farms - Colombia",
-)
-
 # Page navigation
-page = st.sidebar.selectbox("Select a page", ["Map", "Table"])
+st.sidebar.title("Navigation")
+page = st.sidebar.radio("Select a page", ["Map", "Table"], index=0)
 
 if page == 'Map':
     st.title("Map")
