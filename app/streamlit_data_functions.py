@@ -1,31 +1,21 @@
 import streamlit as st
-import os
 import geopandas as gpd
 import folium
 # from streamlit_folium import folium_static
 from streamlit.components.v1 import html
-
-from streamlit_data_load import load_vector
-
-# To load all data
-def load_all_vectors(plots_path, amaz_path, radd_path):
-    plots_gdf = load_vector(plots_path)
-    amaz_gdf = load_vector(amaz_path)
-    radd_gdf = load_vector(radd_path)
-    return plots_gdf, amaz_gdf, radd_gdf
-
-# To reproject to a projected geometry
-def reproject(gdf):
-    return gdf.to_crs(epsg=3857) # epsg: 3857 is commonly used for web maps and is the one used in Google maps
-# meridonal distances at the poles are amplified -- new standard epsg:4087
-# from https://gis.stackexchange.com/questions/372564/userwarning-when-trying-to-get-centroid-from-a-polygon-geopandas
-# TODO investigate other options
+import pandas as pd
 
 
-# Plot vector data on a map
+# To load vector data
+@st.cache_data 
+def load_vector(file_path):
+    return gpd.read_file(file_path)
+
+
+# To plot vector data on a map
 def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
     # Reproject for centroid calculation
-    plots_gdf_reproj = reproject(plots_gdf)
+    #plots_gdf_reproj = reproject(plots_gdf)
     # Create a Folium map centered around the mean coordinates of the geometries
     center = plots_gdf.geometry.centroid.unary_union.centroid.coords[0][::-1] # Because the geometries are small, the geographic CRS is still ok
     m = folium.Map(location=center, zoom_start=12)
@@ -121,32 +111,11 @@ def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
     html(map_html, width=1000, height=700)
 
 
-# Load the data
-plots_path = os.path.abspath("data\\input\\processed\\plots_colombia.geojson")
-amaz_path = os.path.abspath("data\\input\\raw\\perdida_de_bosque\\TMAPB_Region_100K_2020_2022.shp")
-radd_path = os.path.abspath("data\\input\\processed\\radd_gdf.geojson")
-
-plots_gdf, amaz_gdf, radd_gdf = load_all_vectors(plots_path, amaz_path, radd_path)
-
-# Plot the map
-plot_all_vectors(plots_gdf=plots_gdf, vector1_ext_gdf=amaz_gdf, vector2_ext_gdf=radd_gdf, title='Coffe farms & amazonian Colombia & RADD alerts')
-
-
-# def main():
-#     st.title("GeoJSON Plotter")
-
-#     # File uploader to upload a GeoJSON file
-#     geojson_file = st.file_uploader("Upload GeoJSON file", type=["geojson"])
-    
-#     if geojson_file:
-#         # Load the GeoJSON data
-#         gdf = load_geojson(geojson_file)
-        
-#         # Display the data
-#         st.write("GeoDataFrame:", gdf)
-        
-#         # Plot the GeoJSON data
-#         plot_geojson(gdf)
-
-# if __name__ == "__main__":
-#     main()
+# To find intersections (if any)
+def find_intersection(gpd1, gpd2):
+    check_overlap = gpd.sjoin(gpd1, gpd2, how="inner", predicate='intersects')
+    if check_overlap.shape[0] > 0:
+        intersection_result = check_overlap
+    else:
+        intersection_result = pd.DataFrame(data={'col': ['No intersection']})
+    return intersection_result
