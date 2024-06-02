@@ -1,4 +1,5 @@
 ## Libraries ##
+import pandas as pd
 import geopandas as gpd
 import rasterio
 import numpy as np
@@ -7,6 +8,28 @@ from rasterio.plot import show
 from rasterio.windows import from_bounds
 from shapely.geometry import mapping, Polygon
 import geojson
+
+## Functions ##
+# Extract year from radd values
+def extract_year(value):
+    if value == 0:
+        return None
+    days_since = int(str(value)[1:])
+    start_date = pd.Timestamp('2014-12-31')
+    alert_date = start_date + pd.Timedelta(days=days_since)
+    return alert_date.year
+
+def extract_confidence_level(value):
+    if value == 0:
+        return None
+    conf_value = int(str(value)[0])
+    if conf_value == 2:
+        conf_level = 'low'
+    elif conf_value == 3:
+        conf_level = 'high'
+    else:
+        conf_level = 'n/a'
+    return conf_level
 
 
 ## Read files ##
@@ -29,34 +52,57 @@ plots_gdf = gpd.read_file(plots_path)
 amaz_path = "data\\input\\raw\\perdida_de_bosque\\TMAPB_Region_100K_2020_2022.shp"
 # file
 # geopandas as the best library for shapefile -- no windows function available
-amaz_gdf = gpd.read_file(amaz_path) # it will take a while
+amaz_shp_raw = gpd.read_file(amaz_path) # it will take a while
 # Optional
-# amaz_gdf.info()
-# amaz_gdf.head() # will take some time
-# amaz_gdf.geom_type.unique()
-# amaz_gdf.crs
+# amaz_shp.info()
+# amaz_shp.head() # will take some time
+# amaz_shp.geom_type.unique()
+# amaz_shp.crs
+
 ### Observations: ###
 # For the shapefile to be read, you also need all of the rest required files 
+# Columns that show areas are collective, do not show the particular polygon -- probably drop
 # When printing the head, last col indicates multipolygons io polygons -- will have to be treated
+# A multiindex dataframe -- related to deforestac column? -- will have to be checked and treated
 # deforestac column includes other events, not only lost forest -- will have to be filtered
 # geometry = 'polygons'
 # coordinate system is different than the one for the coffee plots  file
 
 # Transform file #
 # From multipolygons to polygons
-amaz_gdf = amaz_gdf.explode(index_parts=True)
+amaz_shp_expl = amaz_shp_raw.explode(index_parts=True)
+
+# Check again the multiindex
+# amaz_shp.head()
+# It looks like it is related with the different categories -- Will treat it at next step
 
 # Filtering for only deforestation areas
-amaz_gdf = amaz_gdf.loc[amaz_gdf['deforestac'] == 'Perdida']
+amaz_shp = amaz_shp_expl.loc[amaz_shp_expl['deforestac'] == 'Perdida']
+
+# Remove multi-index 
+amaz_shp = amaz_shp.reset_index() # level_0, level_1, ...
+# Drop unnecessary columns
+amaz_shp = amaz_shp.drop(columns=['level_0', 'area_ha', 'st_area_sh', 'st_perimet'])
 
 # Transform the crs based on farms' crs
-amaz_gdf = amaz_gdf.to_crs(plots_gdf.crs.to_epsg())
-# amaz_gdf.shape[0] # 13154
-# amaz_gdf.crs
+if amaz_shp.crs != plots_gdf.crs:
+    amaz_shp = amaz_shp.to_crs(plots_gdf.crs.to_epsg())
+
+## Observations ##
+# amaz_shp_expl.shape[0] #29075
+# amaz_shp.shape[0] # 13154
+# amaz_shp.crs
 # Succesfully transformed from multipolygon to polygons
 # Succesfully filtered for lost forest
+# Succesfully dropped unnecessary columns
 # Successfully transformed crs
 
+# Save in geopandas dataframe
+amaz_geojson_path = 'data/input/processed/amaz_gdf.geojson'
+amaz_shp.to_file(amaz_geojson_path, driver='GeoJSON')
+# # Check the writing
+# amaz_gdf=gpd.read_file(amaz_geojson_path)
+# amaz_gdf.head()
 
 # RADD alerts over specific tile
 radd_path = 'data/input/raw/10N_080W.tif'
@@ -101,6 +147,20 @@ feature_collection = geojson.FeatureCollection(features)
 radd_geojson_path = 'data\\input\\processed\\radd_gdf.geojson'
 with open(radd_geojson_path, 'w') as f:
     geojson.dump(feature_collection, f)
+
+# Transform #
+# Read in as geopandas
+radd_gdf=gpd.read_file(radd_geojson_path)
+# Add the necessary columns to transform value to year and confidence level
+# Apply the function to extract year
+radd_gdf['year'] = radd_gdf['value'].apply(extract_year)
+# Applying the function to add confidence level
+radd_gdf['conf_level'] = radd_gdf['value'].apply(extract_confidence_level)
+# Save to geopandas
+if radd_gdf.crs != plots_gdf.crs:
+    radd_gdf = radd_gdf.to_crs(plots_gdf.crs.to_epsg())
+    
+radd_gdf.to_file(radd_geojson_path, driver='GeoJSON')
 
 
 ### Deprecated
