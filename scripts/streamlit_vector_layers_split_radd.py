@@ -51,6 +51,9 @@ amaz_gdf = load_vector(amaz_path)
 # Read in radd when in gdf
 radd_path = os.path.abspath("data\\input\\processed\\radd_gdf.geojson")
 radd_gdf = load_vector(radd_path)
+radd_high_gdf = radd_gdf.loc[radd_gdf['conf_level'] == 'high']
+radd_low_gdf = radd_gdf.loc[radd_gdf['conf_level'] == 'low']
+
 
 # # Display the plots dataset in an expandable table
 # with st.expander("Check the complete dataset:"):
@@ -66,7 +69,7 @@ radd_gdf = load_vector(radd_path)
 
 
 # Plot vector data on a map
-def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
+def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, vector3_ext_gdf, title):
     # Reproject for centroid calculation
     plots_gdf_reproj = reproject(plots_gdf)
     # Create a Folium map centered around the mean coordinates of the geometries
@@ -106,7 +109,7 @@ def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
     # For the third layer
     # Define tooltip for available external vector data
     if vector2_ext_gdf is not None:
-        print('radd_alerts')
+        print('radd_alerts_high')
         tooltip_vector2_ext_gdf = folium.GeoJsonTooltip(fields=['year', 'conf_level'], aliases=['Year: ', 'Confidence level: '])
         
         # Define style for external vector layer
@@ -117,7 +120,23 @@ def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
             #'dashArray': "1, 5", # dots and longer gaps
         }
         # Add the external vector layer to the Folium map
-        folium.GeoJson(vector2_ext_gdf, tooltip=tooltip_vector2_ext_gdf, style_function=lambda x:style_vector2_ext_gdf, name='Radd areas').add_to(m)
+        folium.GeoJson(vector2_ext_gdf, tooltip=tooltip_vector2_ext_gdf, style_function=lambda x:style_vector2_ext_gdf, name='Radd high').add_to(m)
+
+    if vector3_ext_gdf is not None:
+        print('radd_alerts_low')
+        tooltip_vector3_ext_gdf = folium.GeoJsonTooltip(fields=['year', 'conf_level'], aliases=['Year: ', 'Confidence level: '])
+        
+        # Define style for external vector layer
+        style_vector3_ext_gdf = {
+            'fillColor': '#FFFF00', # yellow
+            'color': '#FFFF00',
+            'weight': 1.2,
+            #'dashArray': "1, 5", # dots and longer gaps
+        }
+        # Add the external vector layer to the Folium map
+        folium.GeoJson(vector3_ext_gdf, tooltip=tooltip_vector3_ext_gdf, style_function=lambda x:style_vector3_ext_gdf, name='Radd low').add_to(m)
+
+
 
     
     
@@ -148,13 +167,14 @@ def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
     legend_html = '''
     <div style="
         position: fixed; 
-        bottom: 50px; left: 50px; width: 150px; height: 90px; 
+        bottom: 50px; left: 50px; width: 150px; height: 120px; 
         background-color: white; z-index: 9999; font-size: 14px;
         border:2px solid grey; padding: 10px;">
         <b>Legend</b><br>
         <i style="background: #00000000; border: 2px solid black; border-style: solid; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>Coffee Farms<br>
         <i style="background: #1f77b4; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>Amazonian<br>
-        <i style="background: #ff7f0e; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>RADD<br>
+        <i style="background: #ff7f0e; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>RADD high<br>
+        <i style="background: #FFFF00; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>RADD low<br>
     </div>
     '''
     # legend_html = '''
@@ -183,12 +203,15 @@ unique_values = radd_gdf['year'].unique()
 filter_value = st.selectbox('Filter RADD alerts by year:', ['All'] + list(unique_values))
 
 if filter_value == 'All':
-    filtered_radd_gdf = radd_gdf
+    filtered_radd_high_gdf = radd_high_gdf
+    filtered_radd_low_gdf = radd_low_gdf
 else:
-    filtered_radd_gdf = radd_gdf[radd_gdf['year'] == filter_value]
+    filtered_radd_low_gdf = radd_low_gdf[radd_low_gdf['year'] == filter_value]
+    filtered_radd_low_gdf = radd_low_gdf[radd_low_gdf['year'] == filter_value]
+
 
 # Render map
-map_html = plot_all_vectors(plots_gdf=plots_gdf, vector1_ext_gdf=amaz_gdf, vector2_ext_gdf=filtered_radd_gdf, title='Coffe farms & amazonian Colombia & RADD alerts')
+map_html = plot_all_vectors(plots_gdf=plots_gdf, vector1_ext_gdf=amaz_gdf, vector2_ext_gdf=filtered_radd_high_gdf, vector3_ext_gdf=filtered_radd_low_gdf, title='Coffe farms & amazonian Colombia & RADD alerts')
 # Display map
 html(map_html, width=1000, height=800)
 

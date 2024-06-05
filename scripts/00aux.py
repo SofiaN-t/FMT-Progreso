@@ -9,6 +9,49 @@ from rasterio.features import shapes
 from shapely.geometry import shape, mapping, Polygon
 import geojson
 
+## Check older to newer radd_gdf
+radd_may_path = os.path.abspath("data\\input\\processed\\radd_gdf_may.geojson")
+radd_may_gdf = gpd.read_file(radd_may_path)
+radd_may_gdf.head()
+
+
+
+
+
+## Check logic for years
+radd_path = os.path.abspath("data\\input\\processed\\radd_gdf.geojson")
+radd_gdf = gpd.read_file(radd_path)
+radd_gdf.head()
+
+# Function to calculate the year from the value
+import pandas as pd
+def extract_year(value):
+    if value == 0:
+        return None
+    days_since = int(str(value)[1:])
+    start_date = pd.Timestamp('2014-12-31')
+    alert_date = start_date + pd.Timedelta(days=days_since)
+    return alert_date.year
+
+def extract_confidence_level(value):
+    if value == 0:
+        return None
+    conf_value = int(str(value)[0])
+    if conf_value == 2:
+        conf_level = 'low'
+    elif conf_value == 3:
+        conf_level = 'high'
+    else:
+        conf_level = 'n/a'
+    return conf_level
+
+# Applying the function to extract year
+radd_gdf['year'] = radd_gdf['value'].apply(extract_year)
+# Applying the function to add confidence level
+radd_gdf['conf_level'] = radd_gdf['value'].apply(extract_confidence_level)
+
+#radd_gdf['year'] = 2012
+
 
 # Raster to geojson -- Check another method
 

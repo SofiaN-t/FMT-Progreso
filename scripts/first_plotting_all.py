@@ -1,9 +1,15 @@
 import streamlit as st
 import os
 import geopandas as gpd
-import numpy as np
 import folium
 # from streamlit_folium import folium_static
+import rasterio
+from rasterio.windows import from_bounds
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
+from matplotlib.cm import ScalarMappable
+from folium.raster_layers import ImageOverlay
 from streamlit.components.v1 import html
 
 
@@ -12,16 +18,25 @@ st.set_page_config(
     page_title="Coffee farms - Colombia",
 )
 
-# ----- Left menu -----
-# with st.sidebar:
-#     st.image("eae_img.png", width=200)
-#     st.header("Introduction to Programming Languages for Data")
-#     st.write("###")
-#     st.write("***Final Project - Dec 2023***")
-#     st.write(f"**Author:** {name}")
-#     st.write("**Instructor:** [Enric Domingo](https://github.com/enricd)")
+# ----- Title of the page -----
+st.title("Map")
+st.divider()
+
+# Print the current working directory for debugging purposes
+# st.write("Current working directory:", os.getcwd())
 
 
+# Apply custom CSS to increase table column width
+st.markdown("""
+    <style>
+    .dataframe table {
+        width: 100% !important;
+    }
+    .dataframe th, .dataframe td {
+        min-width: 200px;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 
 # To load vector data
@@ -36,34 +51,44 @@ def reproject(gdf):
 # from https://gis.stackexchange.com/questions/372564/userwarning-when-trying-to-get-centroid-from-a-polygon-geopandas
 # TODO investigate other options
 
+
+
+#### Load data ####
 # Make sure the working directory is the root folder
 default_path = "C:\\Users\\user\\Documents\\EAE\\FMT-Progreso"
 os.chdir(default_path)
-# Read in the plots
+
+# Read in the coffee plots
 #plots_path = "data\\input\\processed\\plots_colombia.geojson"
 plots_path = os.path.abspath("data\\input\\processed\\plots_colombia.geojson")
 plots_gdf = load_vector(plots_path)
 
 # Read in the amazonian colombia datapoints
-amaz_path = os.path.abspath("data\\input\\processed\\amaz_gdf.geojson")
+amaz_path = os.path.abspath("data\\input\\raw\\perdida_de_bosque\\TMAPB_Region_100K_2020_2022.shp")
 amaz_gdf = load_vector(amaz_path)
+# Transform as required
+amaz_gdf = amaz_gdf.explode(index_parts=True)
+# Filtering for only deforestation areas
+amaz_gdf = amaz_gdf.loc[amaz_gdf['deforestac'] == 'Perdida']
+# Transform the crs based on farms' crs
+amaz_gdf = amaz_gdf.to_crs(plots_gdf.crs.to_epsg())
 
-# Read in radd when in gdf
+# Read in the raster to gdf radd datapoints
 radd_path = os.path.abspath("data\\input\\processed\\radd_gdf.geojson")
 radd_gdf = load_vector(radd_path)
+
+
 
 # # Display the plots dataset in an expandable table
 # with st.expander("Check the complete dataset:"):
 #     st.dataframe(plots_gdf)
 
-# st.write("Check the coffee farms:")
-# st.dataframe(plots_gdf.drop(columns='geometry'))
+st.write("Check the coffee farms:")
+st.dataframe(plots_gdf.drop(columns='geometry'))
 # st.dataframe cannot recognise and show the polygons
 
 # st.write("Check the amazonian colombia dataset:")
 # st.dataframe(amaz_gdf.drop(columns='geometry'))
-
-
 
 # Plot vector data on a map
 def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
@@ -78,9 +103,8 @@ def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
 
     # Define style for coffee plots
     style_plots = {
-        'fillColor': '#00000000', #transparent
-        'color': '#000000', # black
-         'weight': 1, 
+        'fillColor': '#0000ff', #blue
+        'color': '#0000ff',
     }
 
     # Add the coffee plots to the Folium map
@@ -90,14 +114,12 @@ def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
     # For the second layer
     # Define tooltip for available external vector data
     if vector1_ext_gdf is not None:
-        tooltip_vector1_ext_gdf = folium.GeoJsonTooltip(fields=['deforestac'], aliases=['Type: '])
-        
+        tooltip_vector1_ext_gdf = folium.GeoJsonTooltip(fields=list(vector1_ext_gdf.columns[:-1]), aliases=[f"{col}:" for col in vector1_ext_gdf.columns[:-1]])
+
         # Define style for external vector layer
         style_vector1_ext_gdf = {
-            'fillColor': '#1f77b4', #  blue #FFBF00 amber
-            'color': '#1f77b4', 
-            'weight': 1.0,
-            #'dashArray': "5, 5", # dashes and gaps of 5 units each
+            'fillColor': '#000000', #black
+            'color': '#000000',
         }
         # Add the external vector layer to the Folium map
         folium.GeoJson(vector1_ext_gdf, tooltip=tooltip_vector1_ext_gdf, style_function=lambda x:style_vector1_ext_gdf, name='Amazonian').add_to(m)
@@ -107,20 +129,18 @@ def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
     # Define tooltip for available external vector data
     if vector2_ext_gdf is not None:
         print('radd_alerts')
-        tooltip_vector2_ext_gdf = folium.GeoJsonTooltip(fields=['year', 'conf_level'], aliases=['Year: ', 'Confidence level: '])
-        
+        tooltip_vector2_ext_gdf = folium.GeoJsonTooltip(fields=list(vector2_ext_gdf.columns[:-1]), aliases=[f"{col}:" for col in vector2_ext_gdf.columns[:-1]])
+
         # Define style for external vector layer
         style_vector2_ext_gdf = {
-            'fillColor': '#ff7f0e', # 
-            'color': '#ff7f0e',
-            'weight': 1.2,
-            #'dashArray': "1, 5", # dots and longer gaps
+            'fillColor': '#FF0000', #red
+            'color': '#FF0000',
         }
         # Add the external vector layer to the Folium map
         folium.GeoJson(vector2_ext_gdf, tooltip=tooltip_vector2_ext_gdf, style_function=lambda x:style_vector2_ext_gdf, name='Radd areas').add_to(m)
 
-    
-    
+
+
     # # Display the map in Streamlit
     # folium_static(m)
 
@@ -152,61 +172,16 @@ def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
         background-color: white; z-index: 9999; font-size: 14px;
         border:2px solid grey; padding: 10px;">
         <b>Legend</b><br>
-        <i style="background: #00000000; border: 2px solid black; border-style: solid; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>Coffee Farms<br>
-        <i style="background: #1f77b4; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>Amazonian<br>
-        <i style="background: #ff7f0e; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>RADD<br>
+        <i style="background: #0000ff; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>Coffee Farms<br>
+        <i style="background: #000000; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>Amazonian<br>
+        <i style="background: #FF0000; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>RADD<br>
     </div>
     '''
-    # legend_html = '''
-    # <div style="
-    #     position: fixed; 
-    #     bottom: 50px; left: 50px; width: 150px; height: 90px; 
-    #     background-color: white; z-index: 9999; font-size: 14px;
-    #     border:2px solid grey; padding: 10px;">
-    #     <b>Legend</b><br>
-    #     <i style="background: #00000000; border: 2px solid black; border-style: solid; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>Coffee Farms<br>
-    #     <i style="background: #FFBF00; border: 2px dashed black; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>Amazonian<br>
-    #     <i style="background: #FFBF00; border: 2px dotted black; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>RADD<br>
-    # </div>
-    # '''
     legend_element = folium.Element(legend_html)
     m.get_root().html.add_child(legend_element)
 
-    # Render html representation of the map
-    return m._repr_html_()
-    # map_html = m._repr_html_()
-    # html(map_html, width=1000, height=700)
+    # Render Folium map as HTML
+    map_html = m._repr_html_()
+    html(map_html, width=1000, height=700)
 
-
-# Apply filters for years
-unique_values = radd_gdf['year'].unique()
-filter_value = st.selectbox('Filter RADD alerts by year:', ['All'] + list(unique_values))
-
-if filter_value == 'All':
-    filtered_radd_gdf = radd_gdf
-else:
-    filtered_radd_gdf = radd_gdf[radd_gdf['year'] == filter_value]
-
-# Render map
-map_html = plot_all_vectors(plots_gdf=plots_gdf, vector1_ext_gdf=amaz_gdf, vector2_ext_gdf=filtered_radd_gdf, title='Coffe farms & amazonian Colombia & RADD alerts')
-# Display map
-html(map_html, width=1000, height=800)
-
-# def main():
-#     st.title("GeoJSON Plotter")
-
-#     # File uploader to upload a GeoJSON file
-#     geojson_file = st.file_uploader("Upload GeoJSON file", type=["geojson"])
-    
-#     if geojson_file:
-#         # Load the GeoJSON data
-#         gdf = load_geojson(geojson_file)
-        
-#         # Display the data
-#         st.write("GeoDataFrame:", gdf)
-        
-#         # Plot the GeoJSON data
-#         plot_geojson(gdf)
-
-# if __name__ == "__main__":
-#     main()
+plot_all_vectors(plots_gdf=plots_gdf, vector1_ext_gdf=amaz_gdf, vector2_ext_gdf=radd_gdf, title='Coffe farms & amazonian Colombia & RADD alerts')

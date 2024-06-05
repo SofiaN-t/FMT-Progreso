@@ -179,13 +179,25 @@ def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
 
 
 # Apply filters for years
-unique_values = radd_gdf['year'].unique()
-filter_value = st.selectbox('Filter RADD alerts by year:', ['All'] + list(unique_values))
+unique_values_year = radd_gdf['year'].unique()
+filter_value_year = st.selectbox('Filter RADD alerts by year:', ['All'] + list(unique_values_year))
 
-if filter_value == 'All':
+# Apply filters for confidence level
+unique_values_conf = radd_gdf['conf_level'].unique()
+filter_value_conf = st.selectbox('Filter RADD alerts by confidence level:', ['All'] + list(unique_values_conf))
+
+if filter_value_year == 'All':
     filtered_radd_gdf = radd_gdf
+    if filter_value_conf == 'All':
+        filtered_radd_gdf = radd_gdf
+    else:
+        filtered_radd_gdf = radd_gdf[radd_gdf['conf_level'] == filter_value_conf]
 else:
-    filtered_radd_gdf = radd_gdf[radd_gdf['year'] == filter_value]
+    filtered_radd_gdf = radd_gdf[radd_gdf['year'] == filter_value_year]
+    if filter_value_conf == 'All':
+        filtered_radd_gdf = filtered_radd_gdf
+    else:
+        filtered_radd_gdf = filtered_radd_gdf[filtered_radd_gdf['conf_level'] == filter_value_conf]
 
 # Render map
 map_html = plot_all_vectors(plots_gdf=plots_gdf, vector1_ext_gdf=amaz_gdf, vector2_ext_gdf=filtered_radd_gdf, title='Coffe farms & amazonian Colombia & RADD alerts')

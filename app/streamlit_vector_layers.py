@@ -10,7 +10,11 @@ from streamlit.components.v1 import html
 # ----- Page configs -----
 st.set_page_config(
     page_title="Coffee farms - Colombia",
+    layout='wide'
 )
+
+# Page title
+st.write("# Map")
 
 # ----- Left menu -----
 # with st.sidebar:
@@ -178,17 +182,74 @@ def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
     # html(map_html, width=1000, height=700)
 
 
-# Apply filters for years
-unique_values = radd_gdf['year'].unique()
-filter_value = st.selectbox('Filter RADD alerts by year:', ['All'] + list(unique_values))
+# # Apply filters for years 
+# unique_values = radd_gdf['year'].unique()
+# filter_value = st.selectbox('Filter RADD alerts by year:', ['All'] + list(unique_values))
 
-if filter_value == 'All':
-    filtered_radd_gdf = radd_gdf
+# if filter_value == 'All':
+#     filtered_radd_gdf = radd_gdf
+# else:
+#     filtered_radd_gdf = radd_gdf[radd_gdf['year'] == filter_value]
+
+# Apply filters for years and confidence levels
+st.sidebar.header('Please filter RADD alerts here')
+
+# With multiselect
+# spec_year = st.sidebar.multiselect(
+#     'Select year:',
+#     options = radd_gdf['year'].unique(),
+#     default = radd_gdf['year'].unique()
+# )
+# filtered_year_radd_gdf = radd_gdf.query(
+#     'year == @spec_year'
+# )
+# spec_conf_level = st.sidebar.multiselect(
+#     'Select confidence level:',
+#     options = radd_gdf['conf_level'].unique(),
+#     default = radd_gdf['conf_level'].unique()
+# )
+# filtered_year_conf_level_radd_gdf = filtered_year_radd_gdf.query(
+#     'conf_level == @spec_conf_level'
+# )
+
+# Identify years
+unique_year_values = np.sort(radd_gdf['year'].unique())
+selected_years = []
+
+# Create a checkbox for each year
+st.sidebar.subheader('For the year:')
+for year in unique_year_values:
+    if st.sidebar.checkbox(f'{year}', key=year, value=True):
+        selected_years.append(year)
+
+# Filter data based on selected years
+if not selected_years:  # If no checkboxes are selected, show all data
+    filtered_year_radd_gdf = radd_gdf
 else:
-    filtered_radd_gdf = radd_gdf[radd_gdf['year'] == filter_value]
+    filtered_year_radd_gdf = radd_gdf[radd_gdf['year'].isin(selected_years)]
+
+
+# Identify years
+unique_conf_level_values = radd_gdf['conf_level'].unique()
+selected_conf_levels = []
+
+# Create a checkbox for each confidence level
+st.sidebar.subheader('For the confidence level:')
+for conf_level in unique_conf_level_values:
+    if st.sidebar.checkbox(f'{conf_level}', key=conf_level, value=True):
+        selected_conf_levels.append(conf_level)
+
+# Filter data based on selected confidence levels
+if not selected_conf_levels: 
+    filtered_year_conf_level_radd_gdf = filtered_year_radd_gdf # After the filter in years is applied
+else:
+    filtered_year_conf_level_radd_gdf = filtered_year_radd_gdf[filtered_year_radd_gdf['conf_level'].isin(selected_conf_levels)]
+
+
+
 
 # Render map
-map_html = plot_all_vectors(plots_gdf=plots_gdf, vector1_ext_gdf=amaz_gdf, vector2_ext_gdf=filtered_radd_gdf, title='Coffe farms & amazonian Colombia & RADD alerts')
+map_html = plot_all_vectors(plots_gdf=plots_gdf, vector1_ext_gdf=amaz_gdf, vector2_ext_gdf=filtered_year_conf_level_radd_gdf, title='Coffe farms & amazonian Colombia & RADD alerts')
 # Display map
 html(map_html, width=1000, height=800)
 
