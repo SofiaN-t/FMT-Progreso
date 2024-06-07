@@ -28,8 +28,8 @@ def write_table(df):
     """, unsafe_allow_html=True)
 
     st.header("Check the potential intersections:")
-    if df.shape[0] > 4:
-        st.write('These are the farms that overlap with the deforested areas:')
+    # if df.shape[0] > 4:
+    #     st.write('These are the farms that overlap with the deforested areas:')
     st.dataframe(df)
 
 write_table(intersection_df)
