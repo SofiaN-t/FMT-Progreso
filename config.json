@@ -8,7 +8,9 @@
             "intersection": "data\\input\\processed\\intersection.csv"
         },
         "raw": {
-            "example_raw_file": "data\\input\\raw\\example_raw_file.geojson"
+            "coffee_plots": "data\\input\\raw\\plots_colombia.xlsx",
+            "amazon": "data\\input\\raw\\perdida_de_bosque\\TMAPB_Region_100K_2020_2022.shp",
+            "radd": "data\\input\\raw\\10N_080W.tif"
         }
     }
 }

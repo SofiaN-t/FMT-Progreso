@@ -1,12 +1,19 @@
 ## Libraries ##
+import os
 import pandas as pd
 # If it throws an error, install the package that is missing
 import json
 import geopandas as gpd
 
 
-## Functions ##
-# to be seen whether is better to wrap code in function
+# Add the root directory to the sys.path
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from utils import load_config
+
+# Load configuration file
+config = load_config()
 
 
 ## Choices ## 
@@ -18,6 +25,7 @@ geojson_col_exists = 'yes'
 ## Steps to go from xlsx to geojson ##
 if (provided_file_type == 'xlsx') & (geojson_col_exists == 'yes'):
     # Read the provided excel file
+    col_excel_path = config['data_pahts']['raw']['coffee_plots']
     col_excel_raw = pd.read_excel("data\\input\\raw\\plots_colombia.xlsx")
     # Show the provided excel file
     col_excel_raw.head()

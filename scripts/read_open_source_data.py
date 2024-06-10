@@ -1,4 +1,5 @@
 ## Libraries ##
+import os
 import pandas as pd
 import geopandas as gpd
 import rasterio
@@ -32,10 +33,20 @@ def extract_confidence_level(value):
     return conf_level
 
 
+# Add the root directory to the sys.path
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from utils import load_config
+
+# Load configuration file
+config = load_config()
+
+
 ## Read files ##
 # Coffee plots -- to identify the crs
 # path
-plots_path = "data\\input\\processed\\plots_colombia.geojson"
+plots_path = os.path.abspath(config['data_paths']['processed']['coffee_plots'])
 # file
 plots_gdf = gpd.read_file(plots_path)
 # Optional
@@ -49,7 +60,7 @@ plots_gdf = gpd.read_file(plots_path)
 
 # Amazonian Colombia
 # path
-amaz_path = "data\\input\\raw\\perdida_de_bosque\\TMAPB_Region_100K_2020_2022.shp"
+amaz_path = os.path.abspath(config['data_paths']['raw']['amazon'])
 # file
 # geopandas as the best library for shapefile -- no windows function available
 amaz_shp_raw = gpd.read_file(amaz_path) # it will take a while
@@ -98,14 +109,14 @@ if amaz_shp.crs != plots_gdf.crs:
 # Successfully transformed crs
 
 # Save in geopandas dataframe
-amaz_geojson_path = 'data/input/processed/amaz_gdf.geojson'
+amaz_geojson_path = config['data_paths']['processed']['amazon']
 amaz_shp.to_file(amaz_geojson_path, driver='GeoJSON')
 # # Check the writing
 # amaz_gdf=gpd.read_file(amaz_geojson_path)
 # amaz_gdf.head()
 
 # RADD alerts over specific tile
-radd_path = 'data/input/raw/10N_080W.tif'
+radd_path = os.path.abspath(config['data_paths']['raw']['radd'])
 
 # Define the bounding box (longitude and latitude)
 min_lon, min_lat = -76.5, 1.8
@@ -144,7 +155,7 @@ for j in range(data.shape[0]):
 feature_collection = geojson.FeatureCollection(features)
 
 # Save the transformed to a geojson file
-radd_geojson_path = 'data\\input\\processed\\radd_gdf.geojson'
+radd_geojson_path = config['data_paths']['processed']['radd']
 with open(radd_geojson_path, 'w') as f:
     geojson.dump(feature_collection, f)
 
