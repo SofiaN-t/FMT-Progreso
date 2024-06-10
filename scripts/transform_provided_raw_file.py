@@ -1,4 +1,5 @@
 ## Libraries ##
+import sys
 import os
 import pandas as pd
 # If it throws an error, install the package that is missing
@@ -6,13 +7,17 @@ import json
 import geopandas as gpd
 
 
-# Add the root directory to the sys.path
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Check if running in an interactive environment eg when running line-by-line
+def is_interactive():
+    import __main__ as main
+    return not hasattr(main, '__file__')
 
-from utils import load_config
+# Add the root directory to the sys.path if not running interactively
+if not is_interactive():
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # Load configuration file
+from utils import load_config
 config = load_config()
 
 
@@ -25,8 +30,8 @@ geojson_col_exists = 'yes'
 ## Steps to go from xlsx to geojson ##
 if (provided_file_type == 'xlsx') & (geojson_col_exists == 'yes'):
     # Read the provided excel file
-    col_excel_path = config['data_pahts']['raw']['coffee_plots']
-    col_excel_raw = pd.read_excel("data\\input\\raw\\plots_colombia.xlsx")
+    col_excel_path = config['data_paths']['raw']['coffee_plots']
+    col_excel_raw = pd.read_excel(col_excel_path)
     # Show the provided excel file
     col_excel_raw.head()
 ### Observations: ###
@@ -36,11 +41,10 @@ if (provided_file_type == 'xlsx') & (geojson_col_exists == 'yes'):
 # We also see that there is an individual plot_is column and an element in the geojson column that is called plot_id
 # that do NOT coincide TODO
 
-# Rename columns to eliminate spaces TODO
-
 
 ## To get the geojson information ##
 # As mentioned, we will focus on one column with the geopspatial info
+# When the provided file is not in the same format, the manipulation might need to be changed.
 geojson_col = 'Coffee plot GeoJson (1)'
 
 # Filter out rows where the GeoJSON data is not present or is not a valid JSON string in the excel file
@@ -77,13 +81,13 @@ flat_geojson = {
 }
 
 # Save the flattened GeoJSON to a new file
-flat_geojson_file_path = 'data\\input\\processed\\plots_colombia.geojson'
+flat_geojson_file_path = config['data_paths']['processed']['coffee_plots']
 with open(flat_geojson_file_path, 'w') as file:
     json.dump(flat_geojson, file)
 
 
 ## Read the produced geojson to check ##
-sample=gpd.read_file("data\\input\\processed\\plots_colombia.geojson")
-sample.head()
+# sample=gpd.read_file("data\\input\\processed\\plots_colombia.geojson")
+# sample.head()
 
 

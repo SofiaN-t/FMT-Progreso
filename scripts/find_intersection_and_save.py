@@ -1,17 +1,30 @@
+## Libraries ##
+import sys
 import os
 import geopandas as gpd
 import pandas as pd
 
+# Check if running in an interactive environment eg when running line-by-line
+def is_interactive():
+    import __main__ as main
+    return not hasattr(main, '__file__')
+
+# Add the root directory to the sys.path if not running interactively
+if not is_interactive():
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+# Load configuration file
+from utils import load_config
+config = load_config()
 
 # Load the data
-plots_path = os.path.abspath("data\\input\\processed\\plots_colombia.geojson")
-amaz_path = os.path.abspath("data\\input\\processed\\amaz_gdf.geojson")
-radd_path = os.path.abspath("data\\input\\processed\\radd_gdf.geojson")
+plots_path = os.path.abspath(config['data_paths']['processed']['coffee_plots'])
+amaz_path = os.path.abspath(config['data_paths']['processed']['amazon'])
+radd_path = os.path.abspath(config['data_paths']['processed']['radd'])
 
 plots_gdf = gpd.read_file(plots_path)
 radd_gdf = gpd.read_file(radd_path)
 amaz_gdf = gpd.read_file(amaz_path)
-amaz_gdf = amaz_gdf.to_crs(plots_gdf.crs.to_epsg())
 
 # Combine alerts
 gdf_alerts = gpd.GeoDataFrame(pd.concat([radd_gdf, amaz_gdf], ignore_index=True))
@@ -27,7 +40,7 @@ def find_intersection(gpd1, gpd2):
         # Find the intersection
         intersection_result = check_overlap.drop(['geometry', 'index_right', 'value', 'year', 'level_1', 'deforestac'], axis=1) # removing unnecessary columns
         # Pivot the table to have the source column as two different ones
-        intersection_result = intersection_result.pivot(columns='source')
+       #TODO This is not ok intersection_result = intersection_result.pivot(columns='source')
     else:
         helper_df = pd.DataFrame(data={'Amazonian': ['No intersection'] * gpd1.shape[0],
                                                  'RADD': ['No intersection'] * gpd1.shape[0]})
@@ -37,4 +50,5 @@ def find_intersection(gpd1, gpd2):
 # Find intersection
 intersection_df = find_intersection(plots_gdf, gdf_alerts)
 # Save to file
-intersection_df.to_csv('data/input/processed/intersection.csv')
+intersection_path = config['data_paths']['processed']['intersection']
+intersection_df.to_csv(intersection_path)
