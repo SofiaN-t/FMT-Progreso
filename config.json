@@ -1,0 +1,15 @@
+{
+    "root_path": "C:\\Users\\user\\Documents\\EAE\\FMT-Progreso",
+    "data_paths": {
+        "processed": {
+            "coffee_plots": "data\\input\\processed\\plots_colombia.geojson",
+            "amazon": "data\\input\\processed\\amaz_gdf.geojson",
+            "radd": "data\\input\\processed\\radd_gdf.geojson",
+            "intersection": "data\\input\\processed\\intersection.csv"
+        },
+        "raw": {
+            "example_raw_file": "data\\input\\raw\\example_raw_file.geojson"
+        }
+    }
+}
+
