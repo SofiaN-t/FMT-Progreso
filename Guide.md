@@ -145,6 +145,8 @@ Finally, the map is rendered and displayed. This page is the one which loads the
 
 2. The second page of the dashboard can be found in the pages folder and is titled 'Intersection_table.py'. Here, we simply load a pre-made file with the intersections found and show it as a table. We chose to make the file before the dashboard development so that the processing time is short. In case this is not desirable, the intersections can be calculated while the dashboard is being produced by incorporating the code from script 'find_intersection_and_save.py'.
 
+3. The last page includes a short description of the dashboard including the raw data sources.
+
 To run the dashboard locally,
 1. Follow steps 1,2,3 as listed above, if you haven't done already
 2. Launch the streamlit app
