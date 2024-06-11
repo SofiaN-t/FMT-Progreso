@@ -1,16 +1,16 @@
 {
-    "root_path": "C:\\Users\\user\\Documents\\EAE\\FMT-Progreso",
+    "root_path": "C:/Users/user/Documents/EAE/FMT-Progreso",
     "data_paths": {
         "processed": {
-            "coffee_plots": "data\\input\\processed\\plots_colombia.geojson",
-            "amazon": "data\\input\\processed\\amaz_gdf.geojson",
-            "radd": "data\\input\\processed\\radd_gdf.geojson",
-            "intersection": "data\\input\\processed\\intersection.csv"
+            "coffee_plots": "data/input/processed/plots_colombia.geojson",
+            "amazon": "data/input/processed/amaz_gdf.geojson",
+            "radd": "data/input/processed/radd_gdf.geojson",
+            "intersection": "data/input/processed/ntersection.csv"
         },
         "raw": {
-            "coffee_plots": "data\\input\\raw\\plots_colombia.xlsx",
-            "amazon": "data\\input\\raw\\perdida_de_bosque\\TMAPB_Region_100K_2020_2022.shp",
-            "radd": "data\\input\\raw\\10N_080W.tif"
+            "coffee_plots": "data/input/raw/plots_colombia.xlsx",
+            "amazon": "data/input/raw/perdida_de_bosque/TMAPB_Region_100K_2020_2022.shp",
+            "radd": "data/input/raw/10N_080W.tif"
         }
     }
 }
