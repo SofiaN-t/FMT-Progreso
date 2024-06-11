@@ -46,6 +46,7 @@ You should now have a dedicated virtual environment for the project and a github
 # Structure
 When opening your project directory, this is the structure that you should encounter: 
 
+```
 .project_root/
 ├── .fmt-progreso/
 ├── app/
@@ -74,11 +75,12 @@ When opening your project directory, this is the structure that you should encou
 ├── Guide.md
 ├── requirements.txt
 └── utils.py
+```
 
 # Data processing
 After having setup the environment, the files used for the dashboard need to be produced. Folder 'scripts' includes the code for the processing.
 
- To ensure reproducibility, an adjustment to some file paths needs to be made. Currently, configuration file 'config.json' specifies the root and the data folder paths. If the zip file is unpacked as is, the data paths should remain the same. Although not strictly used, we suggest that the root_path is changed to the root directory of the project. When a different folder structure is desired, the configuration will need to be changed to reflect the new structure.
+To ensure reproducibility, an adjustment to some file paths needs to be made. Currently, configuration file 'config.json' specifies the root and the data folder paths. If the zip file is unpacked as is, the data paths should remain the same. Although not strictly used, we suggest that the root_path is changed to the root directory of the project. When a different folder structure is desired, the configuration will need to be changed to reflect the new structure.
 
 With these changes, we proceed to explain the developed scripts and the order in which they need to run.
 
