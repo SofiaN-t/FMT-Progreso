@@ -1,4 +1,6 @@
 ## Functions ##
+import os
+import sys
 import rasterio
 import numpy as np
 import geopandas as gpd
@@ -6,10 +8,25 @@ from rasterio.plot import show
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 
+# Check if running in an interactive environment eg when running line-by-line
+def is_interactive():
+    import __main__ as main
+    return not hasattr(main, '__file__')
+
+# Add the root directory to the sys.path if not running interactively
+if not is_interactive():
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..\..')))
+    print(os.path.join(os.path.dirname(__file__), '..\..'))
+
+# Load configuration file
+from utils import load_config
+config = load_config()
 
 # Function to plot all areas
-def display_areas(radd_path, plots_path, amaz_path, lat_range, lon_range, only_alerts):
+def display_areas(radd_path, plots_path, amaz_path, lat_range, lon_range):
     with rasterio.open(radd_path) as src:
+        # Check 0 values
+        print(f"no-data value: {src.nodata}")
         # Transform geographic coordinates into raster coordinates
         top_left = src.index(lon_range[0], lat_range[1])
         bottom_right = src.index(lon_range[1], lat_range[0])
@@ -29,12 +46,6 @@ def display_areas(radd_path, plots_path, amaz_path, lat_range, lon_range, only_a
         # Convert window bounds to geographic coordinates
         bounds = src.window_bounds(window)
 
-    # Apply a mask to the data (if triggered)
-    if only_alerts == True:
-        masked_image = np.where(image > 0, image, np.nan)  # Replace negative values with np.nan
-    else:
-        masked_image = image
-
     # Load the farms polygons
     plots_gdf = gpd.read_file(plots_path)
 
@@ -48,10 +59,11 @@ def display_areas(radd_path, plots_path, amaz_path, lat_range, lon_range, only_a
     ax.set_facecolor('white') #background
 
     # Calculate non-nan min and max
-    valid_data = masked_image[~np.isnan(masked_image)]
+    valid_data = image[~np.isnan(image)]
     vmin, vmax = valid_data.min(), valid_data.max()
 
-    show(masked_image, transform=transform, ax=ax, cmap='viridis', vmin=vmin, vmax=vmax, alpha=0.5, extent=bounds) 
+    show(image, transform=transform, ax=ax, cmap='viridis', vmin=vmin, vmax=vmax, alpha=0.5, extent=bounds) 
+    # Only the positive (hence, alert) values will be printed
     plots_gdf.to_crs(src.crs).plot(ax=ax, facecolor='none', edgecolor='red', linewidth = 2, label = 'Farms polygons')
     amaz_gdf.to_crs(src.crs).plot(ax=ax, facecolor='none', edgecolor='black', linewidth=2, label='Amazonian Colombia')
 
@@ -73,13 +85,12 @@ def display_areas(radd_path, plots_path, amaz_path, lat_range, lon_range, only_a
 
 ## Plot ##
 # By calling the function
-radd_path = 'data\\input\\raw\\10N_080W.tif'
-plots_path = 'data\\input\\processed\\plots_colombia.geojson'
-amaz_path = "data\\input\\raw\\perdida_de_bosque\\TMAPB_Region_100K_2020_2022.shp"
+radd_path = os.path.abspath(config['data_paths']['raw']['radd'])
+plots_path = os.path.abspath(config['data_paths']['processed']['coffee_plots'])
+amaz_path = os.path.abspath(config['data_paths']['raw']['amazon'])
 
 lat_range = [1.8, 2]  # y-axis
 lon_range = [-76.5, -75.5]  # x-axis
-only_alerts = False # boolean to know whether to plot only alerts
 
-display_areas(radd_path,  plots_path, amaz_path, lat_range, lon_range, only_alerts)
+display_areas(radd_path,  plots_path, amaz_path, lat_range, lon_range)
 # When you do not see any of the datasets, the limits of the plot probably do not include those
