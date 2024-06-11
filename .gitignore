@@ -1,6 +1,6 @@
 venv
 .fmt-progreso/
-data/
+data/input/raw
 *.html
 .env
 .vscode
