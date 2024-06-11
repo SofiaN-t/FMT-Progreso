@@ -150,7 +150,7 @@ To run the dashboard locally,
 2. Launch the streamlit app
 
 ```bash
-streamlit run app\Map.py
+streamlit run app\0_Map.py
 ```
 
 The map page should be automatically opened in your web browser. If not, a local URL should be printed on your prompt, which you can follow. There is a left sidebar which you can use to navigate between pages. Below this, you find the filtering area as mentioned above. Selecting and de-selecting will automatically change the map that you can find on the right (this, will take some time). The user can zoom-in and zoom-out of the map by using the button on the top left corner. On the right top corner, there is a toggle button which can be used to select which datasets will be visible on the map. On the bottom left corner, the legend can be found.

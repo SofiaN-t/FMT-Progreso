@@ -6,7 +6,6 @@ st.set_page_config(
     layout='wide'
 )
 
-st.header("Intro")
 
 text = """
 # Intro
@@ -41,14 +40,6 @@ The second page includes a table in standard format.
 This table allows for a straightforward and clear analysis of the overlaps between coffee plots, Amazonian deforested areas, and RADD alerts.
 """
 
-st.write(text) # or st.text
+st.markdown(text) # or st.text
 #st.markdown("[Radd alerts] https://data.globalforestwatch.org/datasets/gfw::deforestation-alerts-radd/about")
 
-
-
-
-
-
-# Links that you find the data
-st.markdown("[Radd alerts] https://data.globalforestwatch.org/datasets/gfw::deforestation-alerts-radd/about")
-# Description of the map and its functionality

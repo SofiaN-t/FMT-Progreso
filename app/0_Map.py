@@ -43,7 +43,7 @@ def reproject(gdf):
 # os.chdir(root_path)
 # Read in the plots
 plots_path = os.path.abspath(config['data_paths']['processed']['coffee_plots'])
-st.write(plots_path)
+# st.write(plots_path)
 plots_gdf = load_vector(plots_path)
 
 # Read in the amazonian colombia datapoints
