@@ -1,5 +1,4 @@
 import streamlit as st
-import json
 import os
 import geopandas as gpd
 import numpy as np
@@ -7,6 +6,7 @@ import folium
 from streamlit.components.v1 import html
 
 # Add the root directory to the sys.path
+# Here, no check for running interactively -- the streamlit parts cannot be run line-by-line
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
@@ -39,8 +39,8 @@ def reproject(gdf):
 # TODO investigate other options
 
 # Make sure the working directory is the root folder
-root_path = config['root_path']
-os.chdir(root_path)
+# root_path = config['root_path']
+# os.chdir(root_path)
 # Read in the plots
 plots_path = os.path.abspath(config['data_paths']['processed']['coffee_plots'])
 plots_gdf = load_vector(plots_path)
@@ -61,6 +61,8 @@ def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
     # Create a Folium map centered around the mean coordinates of the geometries
     center = plots_gdf.geometry.centroid.unary_union.centroid.coords[0][::-1] # warning on calculation
     # Because the geometries are small, the geographic CRS is still ok
+    
+    # Define the map 
     m = folium.Map(location=center, zoom_start=12)
 
     # Define tooltip for coffee plots
@@ -107,6 +109,9 @@ def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
         # Add the external vector layer to the Folium map
         folium.GeoJson(vector2_ext_gdf, tooltip=tooltip_vector2_ext_gdf, style_function=lambda x:style_vector2_ext_gdf, name='Radd areas').add_to(m)
 
+    # For adding more vector layers, use the structure above
+
+
     # Create title HTML
     title_html = f'''
     <h3 align="center" style="font-size:16px"><b>{title}</b></h3>
@@ -131,8 +136,10 @@ def plot_all_vectors(plots_gdf, vector1_ext_gdf, vector2_ext_gdf, title):
         <i style="background: #ff7f0e; width: 18px; height: 18px; float: left; margin-right: 8px;"></i>RADD<br>
     </div>
     '''
-    # The custom legend is based on the arguments passed on the style_function of each GeoJson layer added in folium
-    # Also, keep in mind that the dimensions of the legend box are based on the current situation. So, when adding/removing, this will need to be adjusted
+    # The custom legend is based on the arguments passed on the style_function of each GeoJson layer added in folium.
+    # Therefore, background, border, border-style might need to be changed if different choices are made in style_function
+    # Also, keep in mind that the dimensions of the legend box are based on the current situation. 
+    # So, when adding/removing, this will need to be adjusted.
 
     legend_element = folium.Element(legend_html)
     m.get_root().html.add_child(legend_element)

@@ -1,5 +1,4 @@
 import streamlit as st
-import geopandas as gpd
 import os
 import pandas as pd
 
