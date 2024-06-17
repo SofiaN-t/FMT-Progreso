@@ -119,7 +119,7 @@ You should be able to find two files titled in the folder path `data\input\proce
 
 **3.** `find_intersection_and_save.py` needs to run last. This script loads the three processed geojson files and combines the datasets with the alerts into one, specifying the source of each row. Then, making use of a readily available geopandas function (sjoin), it looks for intersections between the coffee plots and the two alerts datasets. The function merges data from one set of geographical features with another set based on their locations and spatial interaction. It is not computationally expensive because of the way it operates. When it is required, Geopandas creates indices that represent the bounding boxes of the geometries (bounding boxes are the minima and maxima of the x and y coordinates of each geometry). When those do not satisfy the spatial relationship in question, the particular geometries will not. This step significantly reduces the number of detailed geometric calculations needed. The spatial relationship checked here is the intersection which is the most general of all and is true when the boundaries and/or interiors of the two geometries intersect in any way. 
 
-When an intersection is found to be satisfied, geopandas merges the correspoding rows from each dataset. Thus, the sjoin function returns a new geodataframe that includes combined data from both input frames for the pairs of geometries that meet the criteria. When no intersection is found, a dataframe with columns identifying the coffee plots (name, id) and the alerts ('Amazonian', 'RADD') specifying 'No intersection' is returned. In any case, the result is saved in a csv file that will be later used for the dashboard development.
+When an intersection is found to be satisfied, geopandas merges the correspoding rows from each dataset. Thus, the sjoin function returns a new geodataframe that includes combined data from both input frames for the pairs of geometries that meet the criteria. To be more specific, the original result returns the columns from the left geodataframe, namely `plot_name`, `plot_id` and `geometry` and the columns from the right geodataframe (excluding the geometry), while adding an `index_right` column to indicate the index of the right geodataframe (which is the alerts geodataframe) with which the corresponding coffee plot intersect. The result is then adjusted to remove unnecessary columns and create more informative ones. When no intersection is found, a dataframe with columns identifying the coffee plots (name, id) and the alerts ('Amazonian', 'RADD') specifying 'No intersection' is returned. In both cases, the result is saved in a csv file that will be later used for the dashboard development.
 
 To run the script at once:
 1. Follow steps 1,2,3 as listed above, if you haven't done already
@@ -127,7 +127,7 @@ To run the script at once:
 
 You should be able to find a file titled `intersection.csv` in the folder path `data\input\processed`.
 
-## Optionally
+## Exploratory
 Folder `exploratory` includes a python script `plot_all_datasets.py` that was developed at an earlier stage of the project. It is included as a guide for the case that raster *and* vector data need to be plotted together. Here, a plot is produced when the inputs are the two vector datasets (coffee farms & amazonian alerts) and a raster dataset (in this case RADD alerts before transforming it to a geojson format).
 
 A plot is expected as an outcome of this script and is not used further anywhere.
@@ -145,7 +145,7 @@ Finally, the map is rendered and displayed. This page is the one which loads the
 
 2. The second page of the dashboard can be found in the pages folder and is titled 'Intersection_table.py'. Here, we simply load a pre-made file with the intersections found and show it as a table. We chose to make the file before the dashboard development so that the processing time is short. In case this is not desirable, the intersections can be calculated while the dashboard is being produced by incorporating the code from script 'find_intersection_and_save.py'.
 
-3. The last page includes a short description of the dashboard including the raw data sources.
+3. The last page includes a short description of the dashboard including the raw data sources
 
 To run the dashboard locally,
 1. Follow steps 1,2,3 as listed above, if you haven't done already

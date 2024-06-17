@@ -38,9 +38,11 @@ def find_intersection(gpd1, gpd2):
     check_overlap = gpd.sjoin(gpd1, gpd2, how="inner", predicate='intersects')
     if check_overlap.shape[0] > 0:
         # Find the intersection
-        intersection_result = check_overlap.drop(['geometry', 'index_right', 'value', 'year', 'level_1', 'deforestac'], axis=1) # removing unnecessary columns
-        # Pivot the table to have the source column as two different ones
-       #TODO This is not ok intersection_result = intersection_result.pivot(columns='source')
+        check_overlap['intersecting_with'] = 'Unknown' # Adding more informative column
+        check_overlap.loc[check_overlap['source'] == 'radd_gdf', 'intersecting_with'] = 'RADD'
+        check_overlap.loc[check_overlap['source'] == 'amaz_gdf', 'intersecting_with'] = 'Amazonian'
+        intersection_result = check_overlap.drop(['geometry', 'value', 'year', 'level_1', 'deforestac', 'source'], axis=1) # removing unnecessary columns
+        # Here, index_right includes the index of the alerts geodataframe with which the corresponding coffee plot intersects
     else:
         helper_df = pd.DataFrame(data={'Amazonian': ['No intersection'] * gpd1.shape[0],
                                                  'RADD': ['No intersection'] * gpd1.shape[0]})
