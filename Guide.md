@@ -50,9 +50,10 @@ When opening your project directory, this is the structure that you should encou
 .project_root/
 ├── .fmt-progreso/
 ├── app/
-│   ├── Map.py
+│   ├── 0_Map.py
 │   └── pages/
-│       └── Intersection_table.py
+│       │   └── 1_Intersection_table.py
+│       │   └── 2_Background.py  
 ├── data/
 │   └── input/
 │       ├── raw/
