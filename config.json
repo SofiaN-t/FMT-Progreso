@@ -5,7 +5,7 @@
             "coffee_plots": "data/input/processed/plots_colombia.geojson",
             "amazon": "data/input/processed/amaz_gdf.geojson",
             "radd": "data/input/processed/radd_gdf.geojson",
-            "intersection": "data/input/processed/ntersection.csv"
+            "intersection": "data/input/processed/intersection.csv"
         },
         "raw": {
             "coffee_plots": "data/input/raw/plots_colombia.xlsx",
