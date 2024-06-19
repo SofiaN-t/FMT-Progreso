@@ -1,7 +1,7 @@
 # Introduction
 This tool is designed to visually represent a map with three distinct layers, enabling users to identify potential intersections with deforested areas in coffee-producing regions of the department of Huila in Colombia. By leveraging this tool, stakeholders can assess the risk of coffee farms being situated within or in the proximity of deforested areas and consequently be effectively informed on whether coffee exports from these areas align with EU regulations. 
 
-It consists of two main pages. The first one includes an interactive map visualizing the different layers with filtering functionalities. The second page informs the user on intersections on a coffee farm basis via a tabular view. 
+It consists of two main pages. The first one includes an interactive map visualizing the different layers with filtering functionalities. The second page informs the user on intersections on a coffee farm basis via a tabular view. There is also a third auxiliary page that shares basic information on the alert datasets and points to the relevant websites while also explaining the basic functionality of the dashboard.
 
 # Prerequisites
 A python installation is required. 
@@ -78,10 +78,13 @@ When opening your project directory, this is the structure that you should encou
 └── utils.py
 ```
 
-# Data processing
-After having setup the environment, the files used for the dashboard need to be produced. Folder `scripts` includes the code for the processing.
+# Paths configuration
+There are two auxiliary files that take care of the paths configuration. Currently, configuration file `config.json` specifies the root and the data folder paths. File `utils.py` locates and loads the configuration file and loads the specified paths. 
 
-To ensure reproducibility, an adjustment to some file paths needs to be made. Currently, configuration file `config.json` specifies the root and the data folder paths. If the zip file is unpacked as is, the data paths should remain the same. Although not strictly used, we suggest that the root_path is changed to the root directory of the project. When a different folder structure is desired, the configuration will need to be changed to reflect the new structure.
+# Data processing
+After having setup the environment, the files used for the dashboard need to be produced. Folder `scripts` includes the code for the processing. 
+
+To ensure reproducibility, an adjustment to some file paths needs to be made. If the zip file is unpacked as is, the data paths in `config.json` should remain the same. Although not strictly used, we suggest that the root_path is changed to the root directory of the project. When a different folder structure is desired, the configuration will need to be changed to reflect the new structure.
 
 With these changes, we proceed to explain the developed scripts and the order in which they need to run.
 
